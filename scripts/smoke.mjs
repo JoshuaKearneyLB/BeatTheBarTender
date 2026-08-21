@@ -29,45 +29,46 @@ try {
   await page.waitForURL("**/game/demo");
   await page.waitForSelector("text=Demo Mode");
 
-  // Quest card shows the tile-1 goal with a progress stepper; the opener
-  // quest must come from the official menu ("Sell N <drink>")
+  // Till pad shows the tile-1 shift goal; the opener must come from the
+  // official menu ("Sell N <drink>")
   await page.waitForSelector("text=Tile 1");
-  const questLabel = await page.locator("h2.text-lg").innerText();
-  if (!/^Sell \d+ /.test(questLabel)) {
-    throw new Error(`opening quest not menu-based: "${questLabel}"`);
+  const goalLabel = await page.locator('[data-testid="goal-label"]').innerText();
+  if (!/^Sell \d+ /.test(goalLabel)) {
+    throw new Error(`opening goal not menu-based: "${goalLabel}"`);
   }
   const plus = page.locator('[aria-label="Increase progress"]');
   for (let i = 0; i < 3; i++) {
     await plus.click();
     await page.waitForTimeout(120);
   }
-  const counter = await page.locator("p.text-3xl").innerText();
-  if (!counter.trim().startsWith("3")) throw new Error(`expected progress 3, got "${counter}"`);
+  await page.waitForTimeout(450); // let the flip animation settle to one span
+  const counter = await page.locator('[data-testid="goal-count"]').last().innerText();
+  if (!counter.trim().startsWith("3")) throw new Error(`expected count 3, got "${counter}"`);
   await page.screenshot({ path: "/tmp/baropoly-bartender.png" });
 
-  // Submit → pending approval state
-  await page.click("text=Submit for verification");
-  await page.waitForSelector("text=Pending approval");
+  // Send for sign-off → waiting state
+  await page.click("text=Send for sign-off");
+  await page.waitForSelector("text=Waiting on manager sign-off");
 
   // Manager: campaign builder → console → batch approve the seeded queue
   await page.goto(BASE + "/manager");
-  await page.waitForSelector("text=Build the campaign");
+  await page.waitForSelector("text=Chalk up the board");
   await page.waitForSelector("text=Cocktail Focus"); // presets rendered
-  // Quest builder: tile list carries the official-menu drink dropdown
-  await page.click("text=Customize individual tiles");
+  // Goal builder: tile list carries the official-menu drink dropdown
+  await page.click("text=Rework the tiles");
   await page.waitForSelector('select[aria-label="Pick a menu drink for tile 1"]');
   const menuOptions = await page
     .locator('select[aria-label="Pick a menu drink for tile 1"] option')
     .count();
   if (menuOptions < 26) throw new Error(`menu dropdown too small: ${menuOptions} options`);
-  await page.click("text=Customize individual tiles"); // collapse again
-  await page.click("text=Launch the marathon");
+  await page.click("text=Rework the tiles"); // collapse again
+  await page.click("text=Open the board");
   await page.waitForURL("**/manager/demo");
-  await page.waitForSelector("text=Approval queue");
-  await page.waitForSelector("text=claims"); // Marco's seeded submission
-  await page.click("text=Approve 1");
-  await page.waitForSelector("text=Marco completes");
-  await page.waitForSelector("text=approved"); // history row
+  await page.waitForSelector("text=Sign-off queue");
+  await page.waitForSelector("text=says"); // Marco's seeded count
+  await page.click("text=Sign off 1");
+  await page.waitForSelector("text=Marco ticked off");
+  await page.waitForSelector("text=signed off"); // the book
   await page.screenshot({ path: "/tmp/baropoly-manager.png" });
 
   // Training mini-game serves the official 25-drink menu

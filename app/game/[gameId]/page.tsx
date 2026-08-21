@@ -19,8 +19,8 @@ export default function GamePage({ params }: { params: Promise<{ gameId: string 
 
   if (mode === "connecting") {
     return (
-      <main className="flex min-h-dvh items-center justify-center gap-2 text-cream-400">
-        <Loader2 className="size-5 animate-spin" /> Connecting to the marathon…
+      <main className="ticket flex min-h-dvh items-center justify-center gap-2 text-cream-400">
+        <Loader2 className="size-5 animate-spin" /> Clocking you in…
       </main>
     );
   }
@@ -28,9 +28,9 @@ export default function GamePage({ params }: { params: Promise<{ gameId: string 
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-3 px-6 text-center">
         <WifiOff className="size-8 text-danger-400" />
-        <p className="text-danger-400">{error ?? "Could not load the game."}</p>
+        <p className="text-danger-400">{error ?? "Board's down. Check the wifi behind the till."}</p>
         <Link href="/" className="text-sm text-cream-400 underline">
-          Back home
+          Back to the front door
         </Link>
       </main>
     );
@@ -42,8 +42,8 @@ export default function GamePage({ params }: { params: Promise<{ gameId: string 
         <Link href="/" className="flex items-center gap-1 text-sm text-cream-400">
           <ArrowLeft className="size-4" /> {game.name}
         </Link>
-        <span className="rounded-full border border-brass-500/50 px-2 py-0.5 text-xs text-brass-400">
-          {mode === "demo" ? "Demo Mode" : game.autoApprove ? "Live · auto-trust" : "Live"}
+        <span className="ticket border border-brass-500/50 px-2 py-0.5 text-[10px] text-brass-400">
+          {mode === "demo" ? "Demo Mode" : game.autoApprove ? "Live · honor system" : "Live"}
         </span>
       </header>
 
@@ -51,7 +51,7 @@ export default function GamePage({ params }: { params: Promise<{ gameId: string 
         <BoardStrip game={game} meId={me?.id} />
       </section>
 
-      <section className="min-h-20 rounded-xl border border-bar-600 bg-bar-800 p-3">
+      <section className="min-h-20 rounded-lg border-2 border-bar-600 bg-bar-800 p-3">
         <EventTicker events={events} />
       </section>
 

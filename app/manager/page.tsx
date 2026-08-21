@@ -26,9 +26,9 @@ const CATEGORY_ORDER: MenuCategory[] = ["signature", "spritz", "classic", "non_a
 type TileEdit = Omit<Partial<Tile>, "goal"> & { goal?: Partial<TileGoal> };
 
 const GOAL_TYPES: Array<{ value: GoalType; label: string }> = [
-  { value: "volume", label: "Volume" },
+  { value: "volume", label: "Count" },
   { value: "upsell", label: "Upsell" },
-  { value: "task", label: "Task" },
+  { value: "task", label: "Job" },
 ];
 
 export default function ManagerSetup() {
@@ -108,18 +108,20 @@ export default function ManagerSetup() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-6 px-6 py-6">
       <Link href="/" className="flex items-center gap-1 text-sm text-cream-400">
-        <ArrowLeft className="size-4" /> Home
+        <ArrowLeft className="size-4" /> Front door
       </Link>
-      <h1 className="text-2xl font-bold text-brass-400">Build the campaign</h1>
+      <h1 className="text-3xl font-black uppercase tracking-tight text-cream-100">
+        Chalk up the board
+      </h1>
 
       <form onSubmit={createCampaign} className="space-y-5">
         <label className="block space-y-1">
-          <span className="text-sm text-cream-400">Campaign name</span>
+          <span className="ticket text-[11px] text-cream-400">What&apos;s the month called?</span>
           <input value={name} onChange={(e) => setName(e.target.value)} className={field} required />
         </label>
 
         <div className="space-y-2">
-          <span className="text-sm text-cream-400">Goal preset</span>
+          <span className="ticket text-[11px] text-cream-400">House style</span>
           <div className="grid gap-2 sm:grid-cols-3">
             {CAMPAIGN_PRESETS.map((p) => (
               <button
@@ -141,7 +143,7 @@ export default function ManagerSetup() {
         </div>
 
         <label className="block space-y-1">
-          <span className="text-sm text-cream-400">Board length: {boardLength} tiles</span>
+          <span className="ticket text-[11px] text-cream-400">{boardLength} tiles on the board</span>
           <input
             type="range"
             min={20}
@@ -162,19 +164,19 @@ export default function ManagerSetup() {
         >
           <ShieldCheck className={`size-5 ${autoApprove ? "text-mint-400" : "text-cream-400"}`} />
           <span className="flex-1">
-            <span className="block text-sm font-medium">
-              Auto-trust {autoApprove ? "ON" : "OFF"}
+            <span className="block text-sm font-black uppercase tracking-wide">
+              Honor system {autoApprove ? "on" : "off"}
             </span>
             <span className="text-xs text-cream-400">
               {autoApprove
-                ? "Quests approve instantly on submit — except the winning tile, which always waits for you."
-                : "Every quest submission waits in your approval queue."}
+                ? "Counts clear themselves when the crew sends them in — except Last Call. You always sign the win."
+                : "Every count waits on your sign-off."}
             </span>
           </span>
         </button>
 
         <label className="block space-y-1">
-          <span className="text-sm text-cream-400">Manager PIN (approvals & overrides)</span>
+          <span className="ticket text-[11px] text-cream-400">Manager PIN — sign-offs & bumps</span>
           <input
             type="password"
             inputMode="numeric"
@@ -191,9 +193,9 @@ export default function ManagerSetup() {
           <button
             type="button"
             onClick={() => setShowTiles((v) => !v)}
-            className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-brass-400"
+            className="ticket flex w-full items-center justify-between px-4 py-3 text-xs font-black text-brass-400"
           >
-            Customize individual tiles ({boardLength})
+            Rework the tiles, one by one ({boardLength})
             {showTiles ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
           </button>
           {showTiles && (
@@ -205,7 +207,7 @@ export default function ManagerSetup() {
                     <span className="flex-1 truncate">{t.title}</span>
                     {t.move ? (
                       <span className={t.move > 0 ? "text-mint-400" : "text-danger-400"}>
-                        landing {t.move > 0 ? `+${t.move}` : t.move}
+                        {t.move > 0 ? `skip ${t.move}` : `back ${-t.move}`}
                       </span>
                     ) : null}
                   </div>
@@ -292,10 +294,10 @@ export default function ManagerSetup() {
         <button
           type="submit"
           disabled={busy}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-brass-500 px-4 py-3 font-semibold text-bar-900 transition-colors hover:bg-brass-400 disabled:opacity-50"
+          className="pos-key flex w-full items-center justify-center gap-2 border-2 border-brass-400 bg-brass-500 px-4 py-3 font-black uppercase tracking-wide text-bar-950 disabled:opacity-50"
         >
           {busy ? <Loader2 className="size-5 animate-spin" /> : <Dice5 className="size-5" />}
-          {busy ? "Setting up…" : "Launch the marathon"}
+          {busy ? "Chalking it up…" : "Open the board"}
         </button>
       </form>
     </main>

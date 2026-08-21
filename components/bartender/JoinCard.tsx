@@ -31,19 +31,19 @@ export default function JoinCard({
   return (
     <form
       onSubmit={submit}
-      className="space-y-4 rounded-2xl border border-bar-600 bg-bar-800 p-5 shadow-lg shadow-black/30"
+      className="slab space-y-4 rounded-lg border-2 border-bar-600 bg-bar-800 p-5"
     >
       <div>
-        <h2 className="text-lg font-semibold text-brass-400">Join “{gameName}”</h2>
-        <p className="text-sm text-cream-400">Pick your name and game piece.</p>
+        <h2 className="ticket text-sm font-black text-brass-400">On tonight: “{gameName}”</h2>
+        <p className="mt-1 text-sm text-cream-400">Name on the rota, pick your piece.</p>
       </div>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Your name"
+        placeholder="What do they shout across the bar?"
         required
         maxLength={24}
-        className="w-full rounded-xl border border-bar-600 bg-bar-900 px-3 py-3 text-cream-100 outline-none focus:border-brass-500"
+        className="w-full rounded-md border-2 border-bar-600 bg-bar-950 px-3 py-3 text-cream-100 outline-none placeholder:text-cream-400 focus:border-brass-500"
       />
       <div className="flex flex-wrap gap-2">
         {TOKENS.map((t) => (
@@ -52,7 +52,7 @@ export default function JoinCard({
             type="button"
             onClick={() => setToken(t)}
             aria-pressed={token === t}
-            className={`rounded-xl border p-2 text-2xl transition-colors ${
+            className={`pos-key border-2 p-2 text-2xl transition-colors ${
               token === t ? "border-brass-500 bg-brass-500/15" : "border-bar-600 bg-bar-900"
             }`}
           >
@@ -63,9 +63,9 @@ export default function JoinCard({
       <button
         type="submit"
         disabled={busy}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brass-500 px-4 py-3 font-semibold text-bar-900 transition-colors hover:bg-brass-400 disabled:opacity-50"
+        className="pos-key flex w-full items-center justify-center gap-2 border-2 border-brass-400 bg-brass-500 px-4 py-3 font-black uppercase tracking-wide text-bar-950 disabled:opacity-50"
       >
-        <LogIn className="size-5" /> {busy ? "Joining…" : "Clock in"}
+        <LogIn className="size-5" /> {busy ? "Clocking in…" : "Clock in"}
       </button>
     </form>
   );

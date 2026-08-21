@@ -34,7 +34,7 @@ function seedState(id: string): State {
         playerId: "p2",
         tilePosition: 2,
         claimedValue: game.tiles[2].goal.target,
-        note: "Till report attached from close",
+        note: "Till receipt from close-down",
         status: "pending",
         submittedAt: new Date(Date.now() - 40 * 60_000).toISOString(),
       },
@@ -91,7 +91,7 @@ function reducer(state: State, action: Action): State {
           {
             playerId: p.id,
             kind: "checkpoint",
-            message: `${p.name} submitted “${game.tiles[p.position].goal.label}” for review`,
+            message: `${p.name} sent “${game.tiles[p.position].goal.label}” for sign-off`,
           } satisfies BoardEvent,
           ...state.events,
         ].slice(0, 30),
@@ -121,13 +121,13 @@ function reducer(state: State, action: Action): State {
           next = {
             game: withPlayer(next.game, { ...player, awaitingApproval: false }),
             submissions: next.submissions.map((s) =>
-              s.id === id ? { ...s, status: "rejected" as const, reviewNote: "Rejected by manager" } : s,
+              s.id === id ? { ...s, status: "rejected" as const, reviewNote: "Binned by manager" } : s,
             ),
             events: [
               {
                 playerId: player.id,
                 kind: "setback",
-                message: `Manager rejected ${player.name}'s quest — try again`,
+                message: `Manager binned ${player.name}'s count — ring it in again`,
               } satisfies BoardEvent,
               ...next.events,
             ].slice(0, 30),

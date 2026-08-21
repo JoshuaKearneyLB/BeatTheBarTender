@@ -35,6 +35,21 @@ function pickFrom<T>(rand: () => number, arr: T[]): T {
   return arr[Math.floor(rand() * arr.length)];
 }
 
+// Landing-tile flavor: the stuff that actually happens on a shift.
+const DISASTERS = [
+  "Keg Blew Mid-Rush",
+  "Glasswasher Died",
+  "Caught Slacking on Fruit Prep",
+  "Stag Do Trashed the Rail",
+  "Card Machine Down",
+];
+const HOT_STREAKS = [
+  "Big Table Tipped Cash",
+  "Hen Party Round ×3",
+  "Perfect Pour Streak",
+  "Regulars Brought Mates",
+];
+
 const SIGNATURES = byCategory("signature");
 const SPRITZES = byCategory("spritz");
 const CLASSICS = byCategory("classic");
@@ -160,9 +175,9 @@ function makeGoal(rand: () => number, tpl: GoalTemplate, scale = 1): TileGoal {
 }
 
 /**
- * Generate a campaign board: every tile gets a quest from the preset's pool.
- * Rhythm: every 10th tile is a Boss Quest (double target, move 3), every 7th
- * a Hard Quest (1.5x target, move 2); a few bonus/setback landing effects
+ * Generate a campaign board: every tile gets a shift goal from the preset's
+ * pool. Rhythm: every 10th tile is a Boss Night (double target, move 3),
+ * every 7th a Double Shift (1.5x target, move 2); a few landing effects
  * add board-game texture. Deterministic for a given (length, preset, seed);
  * managers can still edit any tile before the campaign starts.
  */
@@ -180,7 +195,7 @@ export function generateCampaignBoard(length: number, presetKey: string, seed = 
     const goal = makeGoal(rand, tpl, isFinish || isBoss ? 2 : isHard ? 1.5 : 1);
 
     let type: TileType = "progress";
-    let title = `Day ${i + 1}`;
+    let title = `Shift ${i + 1}`;
     let move: number | undefined;
 
     if (i === 0) {
@@ -188,22 +203,22 @@ export function generateCampaignBoard(length: number, presetKey: string, seed = 
       title = "Opening Night";
     } else if (isFinish) {
       type = "finish";
-      title = "Last Call — Boss";
+      title = "Last Call";
     } else if (isBoss) {
       type = "challenge";
-      title = "Boss Quest";
+      title = "Boss Night";
     } else if (isHard) {
       type = "challenge";
-      title = "Hard Quest";
+      title = "Double Shift";
     } else {
       const roll = rand();
       if (i > 3 && roll < 0.12) {
         type = "setback";
-        title = "Rough Night";
+        title = pickFrom(rand, DISASTERS);
         move = rand() < 0.5 ? -1 : -2;
       } else if (i > 2 && roll < 0.24) {
         type = "bonus";
-        title = "Hot Streak";
+        title = pickFrom(rand, HOT_STREAKS);
         move = rand() < 0.5 ? 1 : 2;
       }
     }
@@ -214,7 +229,9 @@ export function generateCampaignBoard(length: number, presetKey: string, seed = 
       title,
       description:
         move !== undefined
-          ? `Landing here ${move > 0 ? `skips you ahead ${move}` : `knocks you back ${-move}`}.`
+          ? move > 0
+            ? `Land here and skip ahead ${move}.`
+            : `Land here and eat it — back ${-move}.`
           : undefined,
       move,
       goal,
@@ -227,8 +244,8 @@ export function generateCampaignBoard(length: number, presetKey: string, seed = 
 // ---------- movement ----------
 
 /**
- * Apply an approved quest completion. Mirrored by _apply_quest_approval in
- * SQL: completing the final tile's quest wins; otherwise advance by the
+ * Apply a signed-off shift goal. Mirrored by _apply_quest_approval in
+ * SQL: completing the final tile's goal wins; otherwise advance by the
  * tile's moveValue, then apply the landing tile's effect once (no chaining).
  */
 export function applyQuestApproval(
@@ -240,7 +257,11 @@ export function applyQuestApproval(
 
   if (p.position >= game.boardLength - 1) {
     p.finished = true;
-    events.push({ playerId: p.id, kind: "win", message: `🏆 ${p.name} WINS the marathon!` });
+    events.push({
+      playerId: p.id,
+      kind: "win",
+      message: `🏆 ${p.name} rang Last Call. Drinks are on them.`,
+    });
     return { player: p, events };
   }
 
@@ -249,7 +270,7 @@ export function applyQuestApproval(
   events.push({
     playerId: p.id,
     kind: "advance",
-    message: `${p.name} completes “${from.goal.label}” → ${from.moveValue > 1 ? `${from.moveValue} tiles to` : ""} “${game.tiles[p.position].title}”`,
+    message: `${p.name} ticked off “${from.goal.label}”${from.moveValue > 1 ? ` — big move, ${from.moveValue} tiles` : ""} → “${game.tiles[p.position].title}”`,
   });
 
   const landed = game.tiles[p.position];
@@ -258,7 +279,7 @@ export function applyQuestApproval(
     events.push({
       playerId: p.id,
       kind: landed.move > 0 ? "bonus" : "setback",
-      message: `${landed.title}: ${landed.description ?? ""} → tile ${p.position + 1}`,
+      message: `${landed.title}! ${landed.move > 0 ? `${p.name} skips ahead` : `${p.name} eats it, back`} ${Math.abs(landed.move)} → tile ${p.position + 1}`,
     });
   }
 
@@ -266,7 +287,7 @@ export function applyQuestApproval(
     events.push({
       playerId: p.id,
       kind: "checkpoint",
-      message: `${p.name} faces the final Boss Quest at Last Call!`,
+      message: `${p.name} is at Last Call. One goal left — the manager watches the pour.`,
     });
   }
   return { player: p, events };
@@ -288,7 +309,7 @@ export function applyOverride(
       {
         playerId: p.id,
         kind: "override",
-        message: `Manager ${delta > 0 ? "advanced" : "set back"} ${p.name} (${reason})`,
+        message: `Manager ${delta > 0 ? "bumped" : "knocked"} ${p.name} ${delta > 0 ? "up" : "back"} — ${reason}`,
       },
     ],
   };

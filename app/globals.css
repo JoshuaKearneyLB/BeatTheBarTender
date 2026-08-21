@@ -1,17 +1,20 @@
 @import "tailwindcss";
 
+/* Obsidian + neon: charcoal blacks, amber hits, acid green, cocktail pink.
+   Token names are stable (bar-*, brass-*, mint, danger) so components
+   re-skin without churn. */
 @theme {
-  --color-bar-950: #0d0a08;
-  --color-bar-900: #14100d;
-  --color-bar-800: #1e1813;
-  --color-bar-700: #2a221a;
-  --color-bar-600: #3b3025;
-  --color-brass-400: #f0c268;
-  --color-brass-500: #d9a441;
-  --color-cream-100: #f3e9da;
-  --color-cream-400: #b3a48f;
-  --color-mint-400: #7fbf7f;
-  --color-danger-400: #e07a6a;
+  --color-bar-950: #050506;
+  --color-bar-900: #0b0b0d;
+  --color-bar-800: #131316;
+  --color-bar-700: #1b1b20;
+  --color-bar-600: #2c2c33;
+  --color-brass-400: #ffb92e;
+  --color-brass-500: #f59e0b;
+  --color-cream-100: #f2f0ea;
+  --color-cream-400: #8f8f98;
+  --color-mint-400: #4ce07b;
+  --color-danger-400: #ff5c8a;
 }
 
 html {
@@ -20,6 +23,34 @@ html {
 
 body {
   @apply bg-bar-900 text-cream-100 antialiased;
-  background-image: radial-gradient(900px 480px at 50% -10%, #2a2015 0%, transparent 60%);
+  background-image:
+    radial-gradient(700px 320px at 50% -80px, rgba(255, 185, 46, 0.08), transparent 65%),
+    repeating-linear-gradient(0deg, transparent 0 2px, rgba(255, 255, 255, 0.006) 2px 4px);
   overscroll-behavior-y: none;
+}
+
+/* Ticket-header type: what the kitchen printer spits out. */
+.ticket {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+/* POS quick-key: hard edges, thick base, physical press. */
+.pos-key {
+  border-radius: 0.5rem;
+  border-bottom-width: 4px;
+  border-bottom-color: rgba(0, 0, 0, 0.65);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+  transition: transform 60ms ease, box-shadow 60ms ease;
+}
+.pos-key:active:not(:disabled) {
+  transform: translateY(3px);
+  border-bottom-width: 1px;
+  box-shadow: none;
+}
+
+/* Hard offset shadow — nothing floats, everything sits. */
+.slab {
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.55);
 }

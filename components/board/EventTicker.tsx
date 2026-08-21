@@ -31,7 +31,7 @@ export default function EventTicker({ events }: { events: BoardEvent[] }) {
         ))}
       </AnimatePresence>
       {events.length === 0 && (
-        <li className="text-cream-400">Marathon is live — chase your quest!</li>
+        <li className="text-cream-400">Board&apos;s open. Get pouring.</li>
       )}
     </ul>
   );

@@ -55,7 +55,7 @@ function pushEvents(events: BoardEvent[], incoming: BoardEvent[]): BoardEvent[] 
 function diffPlayerEvents(prev: Player | undefined, next: Player, game: Game): BoardEvent[] {
   const events: BoardEvent[] = [];
   if (!prev) {
-    events.push({ playerId: next.id, kind: "join", message: `${next.name} joined the marathon` });
+    events.push({ playerId: next.id, kind: "join", message: `${next.name} clocked in` });
     return events;
   }
   if (next.position !== prev.position) {
@@ -65,19 +65,23 @@ function diffPlayerEvents(prev: Player | undefined, next: Player, game: Game): B
       kind: next.position > prev.position ? "advance" : "setback",
       message:
         next.position > prev.position
-          ? `${next.name} advances to “${tile?.title ?? `tile ${next.position + 1}`}”`
-          : `${next.name} moves back to tile ${next.position + 1}`,
+          ? `${next.name} moves up to “${tile?.title ?? `tile ${next.position + 1}`}”`
+          : `${next.name} knocked back to tile ${next.position + 1}`,
     });
   }
   if (next.awaitingApproval && !prev.awaitingApproval) {
     events.push({
       playerId: next.id,
       kind: "checkpoint",
-      message: `${next.name} submitted a quest for review`,
+      message: `${next.name} is waiting on manager sign-off`,
     });
   }
   if (next.finished && !prev.finished) {
-    events.push({ playerId: next.id, kind: "win", message: `🏆 ${next.name} WINS the marathon!` });
+    events.push({
+      playerId: next.id,
+      kind: "win",
+      message: `🏆 ${next.name} rang Last Call. Drinks are on them.`,
+    });
   }
   return events;
 }
@@ -260,7 +264,7 @@ export function useLiveGame(gameId: string, enabled: boolean): GameApi {
                 {
                   playerId: current.id,
                   kind: "checkpoint",
-                  message: `${current.name} submitted “${s.game!.tiles[current.position].goal.label}” for review`,
+                  message: `${current.name} sent “${s.game!.tiles[current.position].goal.label}” for sign-off`,
                 },
               ]),
             }
