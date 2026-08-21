@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Beat the Bartender</title>
+  <title>Specs Test — Beat the Bartender</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍸</text></svg>" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
@@ -12,21 +12,25 @@
     <!-- Start -->
     <section id="screen-start" class="screen active">
       <header class="masthead">
-        <h1>🍸 Beat the Bartender</h1>
-        <p class="tagline">Ten mystery serves off our own menu. One smug bartender. Prove you know your specs.</p>
+        <p class="ticket-label">Specs test · house menu</p>
+        <h1>Beat the Bartender</h1>
+        <p class="tagline">ten serves off our own menu.<br />one smug bartender. know your specs.</p>
       </header>
 
       <div class="rules">
         <h2>House rules</h2>
         <ol>
-          <li>Each round, a mystery serve's build is revealed one line at a time — house measures and all.</li>
-          <li>Guess the drink — the fewer clues you need, the more points you pour.</li>
-          <li>The bartender is playing too. When they lock in, the pressure's on.</li>
-          <li>Highest tab after ten rounds wins the shift. Keys 1–4 answer fast.</li>
+          <li>The build prints out one line at a time — house measures and all.</li>
+          <li>Call the drink early. Fewer lines showing, more points.</li>
+          <li>The other one behind the bar is playing too. When they call it, you're on the clock.</li>
+          <li>Biggest tab after ten rounds takes it. Keys 1–4 answer.</li>
         </ol>
       </div>
 
-      <div id="difficulty-picker" aria-label="Choose your opponent"></div>
+      <p class="ticket-label" style="border-bottom: 2px solid var(--bar-600); padding-bottom: 0.5rem; margin-bottom: 0.25rem;">
+        Who are you up against?
+      </p>
+      <div id="difficulty-picker" aria-label="Pick your opponent"></div>
     </section>
 
     <!-- Game -->
@@ -47,32 +51,35 @@
       <p id="house-status"></p>
 
       <div class="clue-card">
-        <h2>In the shaker</h2>
+        <h2>★ the build ★</h2>
         <ul id="clues"></ul>
       </div>
 
-      <div id="options" aria-label="Your guess"></div>
+      <div id="options" aria-label="Call it"></div>
 
       <div id="round-result" class="hidden"></div>
-      <button id="btn-next" class="btn-primary hidden">Next round →</button>
+      <button id="btn-next" class="btn-primary hidden">Next round</button>
     </section>
 
     <!-- End -->
     <section id="screen-end" class="screen">
-      <h2 id="final-title"></h2>
-      <div class="final-scores">
-        <div>
-          <div class="big" id="final-player-score">0</div>
-          <div class="who">You</div>
+      <div class="final-receipt">
+        <p class="ticket-label" style="text-align: center; letter-spacing: 0.22em;">★ final tab ★</p>
+        <h2 id="final-title"></h2>
+        <div class="final-scores">
+          <div>
+            <div class="who">You</div>
+            <div class="big" id="final-player-score">0</div>
+          </div>
+          <div>
+            <div class="who">The House</div>
+            <div class="big" id="final-house-score">0</div>
+          </div>
         </div>
-        <div>
-          <div class="big" id="final-house-score">0</div>
-          <div class="who">The House</div>
-        </div>
+        <p class="final-meta">Best run: <span id="final-streak">0</span> on the trot</p>
+        <ol id="final-rounds"></ol>
       </div>
-      <p class="final-meta">Best streak: <span id="final-streak">0</span> in a row</p>
-      <ol id="final-rounds"></ol>
-      <button id="btn-replay" class="btn-primary">Run it back 🍹</button>
+      <button id="btn-replay" class="btn-primary">Run it back</button>
     </section>
   </main>
 

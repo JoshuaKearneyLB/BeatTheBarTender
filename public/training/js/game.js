@@ -14,26 +14,26 @@ const POINTS_PER_HIDDEN = 50;
 
 const DIFFICULTIES = {
   barback: {
-    label: "Barback",
-    blurb: "Fresh hire, still learning the well drinks.",
+    label: "The barback",
+    blurb: "three weeks in, still checks the book",
     accuracy: 0.55,
-    // How many ingredients the bartender needs before locking in (min, max)
+    // How many lines of the build they need before they call it (min, max)
     lockIn: [3, 5],
-    name: "Sam the Barback",
+    name: "Sam",
   },
   bartender: {
-    label: "Bartender",
-    blurb: "Knows the classics cold. Respectable pour.",
+    label: "The closer",
+    blurb: "knows the menu cold, never rushes",
     accuracy: 0.75,
     lockIn: [2, 4],
-    name: "Rusty the Bartender",
+    name: "Rusty",
   },
   mixologist: {
-    label: "Mixologist",
-    blurb: "Suspenders, hand-carved ice, encyclopedic memory.",
+    label: "The tattooed one",
+    blurb: "hand-carves the ice. insufferable. correct.",
     accuracy: 0.92,
     lockIn: [1, 3],
-    name: "Vesper the Mixologist",
+    name: "Vesper",
   },
 };
 
@@ -140,7 +140,7 @@ function revealNext() {
 
   if (!cur.houseLocked && cur.revealed >= cur.houseLockIn) {
     cur.houseLocked = true;
-    setHouseStatus("has locked in an answer…", "locked");
+    setHouseStatus("has already called it…", "locked");
   }
 
   if (cur.revealed >= cur.cocktail.ingredients.length) {
@@ -198,10 +198,10 @@ function endGame() {
   const tied = state.playerScore === state.houseScore;
 
   $("final-title").textContent = won
-    ? "You beat the bartender! 🏆"
+    ? "You beat the bartender"
     : tied
-      ? "Split the tip jar — it's a tie."
-      : `${state.difficulty.name} keeps the crown.`;
+      ? "Dead heat — split the tips"
+      : `${state.difficulty.name} keeps the bar`;
   $("final-player-score").textContent = state.playerScore;
   $("final-house-score").textContent = state.houseScore;
   $("final-streak").textContent = state.bestStreak;
@@ -227,15 +227,15 @@ function renderRound() {
   $("round-label").textContent = `Round ${state.round} of ${ROUNDS_PER_GAME}`;
   $("player-score").textContent = state.playerScore;
   $("house-score").textContent = state.houseScore;
-  $("streak").textContent = state.streak > 1 ? `🔥 ${state.streak}` : "";
-  setHouseStatus("is thinking…", "");
+  $("streak").textContent = state.streak > 1 ? `${state.streak} on the trot` : "";
+  setHouseStatus("is squinting at it…", "");
 
   const clueList = $("clues");
   clueList.innerHTML = "";
   cur.cocktail.ingredients.forEach(() => {
     const li = document.createElement("li");
     li.className = "clue hidden-clue";
-    li.textContent = "?????";
+    li.textContent = "·····································";
     clueList.appendChild(li);
   });
 
@@ -283,26 +283,28 @@ function renderRoundResult(choice, playerCorrect, playerPoints, houseScored, hou
 
   const cur = state.current;
   const box = $("round-result");
+  const stamp = playerCorrect
+    ? `<span class="stamp good">called it</span>`
+    : `<span class="stamp bad">${choice === null ? "too slow" : "wrong pour"}</span>`;
   const verdict = playerCorrect
-    ? `Nailed it — that's the <strong>${cur.cocktail.name}</strong>. +${playerPoints} pts.`
-    : choice === null
-      ? `Time's up! It was the <strong>${cur.cocktail.name}</strong>.`
-      : `Not quite — it was the <strong>${cur.cocktail.name}</strong>.`;
+    ? `that's the <span class="drink">${cur.cocktail.name}</span> — +${playerPoints} on the tab.`
+    : `it was the <span class="drink">${cur.cocktail.name}</span>.`;
   const houseLine = houseScored
-    ? `${state.difficulty.name} called it and pockets ${housePoints} pts.`
-    : `${state.difficulty.name} whiffed this one. No points for the house.`;
-  box.innerHTML = `<p>${verdict}</p>
+    ? `${state.difficulty.name} called it too — ${housePoints} to the house.`
+    : `${state.difficulty.name} got it wrong. nothing for the house.`;
+  box.innerHTML = `<p>${stamp}</p>
+    <p>${verdict}</p>
     <p class="house-line">${houseLine}</p>
-    <p class="serve-note">House spec garnish: ${cur.cocktail.garnish}.</p>`;
+    <p class="serve-note">Garnish: ${cur.cocktail.garnish}</p>`;
   box.classList.remove("hidden");
 
   $("player-score").textContent = state.playerScore;
   $("house-score").textContent = state.houseScore;
-  $("streak").textContent = state.streak > 1 ? `🔥 ${state.streak}` : "";
-  setHouseStatus(houseScored ? "smirks." : "grumbles.", houseScored ? "locked" : "");
+  $("streak").textContent = state.streak > 1 ? `${state.streak} on the trot` : "";
+  setHouseStatus(houseScored ? "is insufferable about it." : "is sulking.", houseScored ? "locked" : "");
 
   const nextBtn = $("btn-next");
-  nextBtn.textContent = state.round >= ROUNDS_PER_GAME ? "Final tab →" : "Next round →";
+  nextBtn.textContent = state.round >= ROUNDS_PER_GAME ? "Cash out" : "Next round";
   nextBtn.classList.remove("hidden");
   nextBtn.focus();
 }
@@ -314,7 +316,10 @@ document.addEventListener("DOMContentLoaded", () => {
   Object.entries(DIFFICULTIES).forEach(([key, d]) => {
     const btn = document.createElement("button");
     btn.className = "difficulty";
-    btn.innerHTML = `<span class="d-label">${d.label}</span><span class="d-blurb">${d.blurb}</span>`;
+    btn.innerHTML =
+      `<span class="d-label">${d.label}</span>` +
+      `<span class="d-leader"></span>` +
+      `<span class="d-blurb">${d.blurb}</span>`;
     btn.addEventListener("click", () => startGame(key));
     picker.appendChild(btn);
   });
