@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bar-950: #0d0a08;
+  --color-bar-900: #14100d;
+  --color-bar-800: #1e1813;
+  --color-bar-700: #2a221a;
+  --color-bar-600: #3b3025;
+  --color-brass-400: #f0c268;
+  --color-brass-500: #d9a441;
+  --color-cream-100: #f3e9da;
+  --color-cream-400: #b3a48f;
+  --color-mint-400: #7fbf7f;
+  --color-danger-400: #e07a6a;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  @apply bg-bar-900 text-cream-100 antialiased;
+  background-image: radial-gradient(900px 480px at 50% -10%, #2a2015 0%, transparent 60%);
+  overscroll-behavior-y: none;
+}

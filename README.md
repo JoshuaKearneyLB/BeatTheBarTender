@@ -1,47 +1,87 @@
-# 🍸 Beat the Bartender
+# 🎲 Baropoly (v0.1)
 
-A fast, zero-dependency cocktail trivia game. Each round, a mystery cocktail's
-ingredients are revealed one at a time — guess the drink before the house
-bartender locks in their answer. The fewer clues you need, the more you score.
-Highest tab after ten rounds wins the shift.
+Mobile-first PWA that gamifies bar sales as a digital board game. Bartenders
+speed-tally sales on their phones; every tally pushes their token along a
+30-tile board with bonuses, setbacks, and manager checkpoints. First to Last
+Call wins the shift. No POS integration at launch — manual tallies backed by
+receipt-photo spot-checks and manager oversight.
 
-## Play
+**Stack:** Next.js (App Router) · Tailwind CSS v4 · Framer Motion · Lucide ·
+Supabase (Postgres + Realtime + Storage) · Vercel / PWA.
 
-No build step, no dependencies. Either open `index.html` directly in a
-browser, or serve the folder:
+## Quick start
 
 ```sh
-npx serve .
-# or
-python3 -m http.server 8000
+npm install
+npm run dev
 ```
 
-Then visit the printed URL.
+Open http://localhost:3000. With no env vars set the app runs in **Demo
+Mode** — every screen works with local seeded state, so you can feel the
+game loop before provisioning anything.
 
-## How it works
+To go live: create a Supabase project, run
+`supabase/migrations/0001_init.sql`, copy `.env.example` to `.env.local`,
+and fill in the URL + anon key.
 
-- **Pick your opponent.** Sam the Barback is forgiving; Vesper the Mixologist
-  is not. Difficulty controls how quickly the house locks in an answer and how
-  often they're right.
-- **Clues drip out** every three seconds. Answer early for bonus points
-  (50 base + 50 per still-hidden ingredient). A wrong guess ends the round
-  with nothing.
-- **The house plays too.** When your opponent locks in, you'll see it — they
-  score their own points if their answer was right, whether or not you were.
-- **Keyboard-friendly.** Keys `1`–`4` pick an answer; `Enter` advances rounds.
-
-## Project layout
+## Structure
 
 ```
-index.html        Markup and screens (start / game / results)
-css/styles.css    Speakeasy-dark theme
-js/game.js        Game loop, scoring, house-bartender AI, rendering
-data/cocktails.js 36 classic cocktails with ingredients ordered least-to-most revealing
+app/
+  page.tsx                  Role picker (bartender / manager / training)
+  layout.tsx, globals.css   Shell, theme tokens, PWA metadata
+  manifest.ts               PWA web manifest
+  game/[gameId]/page.tsx    Bartender view: board + ticker + tally pad
+  manager/page.tsx          Shift setup (name, board size, pace, PIN)
+  manager/[gameId]/page.tsx Manager console: roster, overrides, audit feed
+components/
+  bartender/TallyPad.tsx    Speed-tally buttons, receipt capture, undo
+  board/BoardStrip.tsx      Scrolling tile strip w/ animated player tokens
+  board/EventTicker.tsx     Play-by-play of board events
+  RegisterSW.tsx            Service-worker registration
+lib/
+  types.ts                  Domain types + default tally actions
+  board.ts                  Board engine (pure): generation, movement, effects
+  useGame.ts                Game state hook (demo reducer / realtime seam)
+  supabase/client.ts        Browser client (null ⇒ Demo Mode)
+  supabase/realtime.ts      Per-game live subscription
+supabase/migrations/
+  0001_init.sql             Schema, RLS, realtime publication, storage bucket
+public/
+  sw.js, icon.svg           Offline shell + app icon
+  training/                 “Beat the Bartender” cocktail trivia mini-game
 ```
 
-## Ideas on the back bar
+## Game rules (v0.1 defaults)
 
-- Reverse mode: given the drink, build it from a well of ingredients
-- Daily challenge with a shared shuffle seed
-- Local leaderboard via `localStorage`
-- Sound: shaker rattle on reveal, cheer on a streak
+- Each tally tap logs an action (cocktail/draft = 1 unit, upsell = 2).
+- Every `actions_per_tile` units (default 3) advances the token one tile.
+- Landing effects: **bonus** skips ahead, **setback** moves back
+  ("Spill on the Rail — move back 2"), **challenge** poses a task; effects
+  never chain.
+- **Checkpoint** (mid-board) and **finish** tiles park the player until a
+  manager approves — the anti-cheat pinch points.
+- Managers can manual-advance, apply a "Failed Audit" setback, void
+  tallies, and approve/deny the win.
+
+## Demo Mode notes
+
+Demo state is per-tab (the bartender and manager demo screens each seed
+their own session). Realtime cross-device sync activates with Supabase env
+vars — the seam is `lib/useGame.ts` + `lib/supabase/realtime.ts`.
+
+## Training corner
+
+`/training` serves **Beat the Bartender**, a self-contained cocktail-trivia
+game (guess the drink from its ingredients before the house bartender does).
+Handy for onboarding new staff during dead hours. It predates the Baropoly
+scaffold and is intentionally dependency-free — see
+`public/training/ABOUT.md`.
+
+## Roadmap to v0.2
+
+- Supabase Auth (magic link) + profile onboarding
+- Server-authoritative moves via Postgres RPC (client stays optimistic)
+- Receipt upload to Storage + signed-URL audit feed
+- Manager PIN verification in an edge function
+- Offline tally queue via background sync in `sw.js`
