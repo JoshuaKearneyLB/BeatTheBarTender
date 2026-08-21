@@ -6,7 +6,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Dice5 } from "lucide-react";
+import { ArrowLeft, Dice5, Loader2 } from "lucide-react";
+import { isDemoMode } from "@/lib/supabase/client";
+import { createGameLive } from "@/lib/supabase/db";
 
 export default function ManagerSetup() {
   const router = useRouter();
@@ -14,11 +16,27 @@ export default function ManagerSetup() {
   const [boardLength, setBoardLength] = useState(30);
   const [actionsPerTile, setActionsPerTile] = useState(3);
   const [pin, setPin] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function createGame(e: React.FormEvent) {
+  async function createGame(e: React.FormEvent) {
     e.preventDefault();
-    // Supabase mode: insert into games + generate/persist game_tiles here.
-    router.push("/manager/demo");
+    if (isDemoMode()) {
+      router.push("/manager/demo");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const gameId = await createGameLive({ name, boardLength, actionsPerTile, pin });
+      try {
+        sessionStorage.setItem("baropoly.manager-pin", pin);
+      } catch {}
+      router.push(`/manager/${gameId}`);
+    } catch (err) {
+      setError((err as Error).message);
+      setBusy(false);
+    }
   }
 
   const field =
@@ -73,11 +91,15 @@ export default function ManagerSetup() {
           />
         </label>
 
+        {error && <p className="text-sm text-danger-400">{error}</p>}
+
         <button
           type="submit"
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-brass-500 px-4 py-3 font-semibold text-bar-900 transition-colors hover:bg-brass-400"
+          disabled={busy}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-brass-500 px-4 py-3 font-semibold text-bar-900 transition-colors hover:bg-brass-400 disabled:opacity-50"
         >
-          <Dice5 className="size-5" /> Start the game
+          {busy ? <Loader2 className="size-5 animate-spin" /> : <Dice5 className="size-5" />}
+          {busy ? "Setting up…" : "Start the game"}
         </button>
       </form>
     </main>

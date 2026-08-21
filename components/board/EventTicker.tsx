@@ -10,6 +10,7 @@ const KIND_COLOR: Record<BoardEvent["kind"], string> = {
   checkpoint: "text-brass-400",
   win: "text-brass-400",
   override: "text-cream-400",
+  join: "text-cream-400",
 };
 
 /** The last few board events, newest on top — the bar's play-by-play. */

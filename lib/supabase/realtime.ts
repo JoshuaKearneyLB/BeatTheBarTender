@@ -1,29 +1,47 @@
 import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 
+export type GameTable = "games" | "game_players" | "action_logs";
+
+export interface GameChange {
+  table: GameTable;
+  eventType: "INSERT" | "UPDATE" | "DELETE";
+  new: Record<string, unknown> | null;
+}
+
 /**
- * Subscribe to live changes for one game. Fires `onChange` whenever a player
- * row or action log for this game mutates; the caller refetches or patches
- * local state. Returns an unsubscribe function.
+ * Subscribe to live changes for one game: player movement, tally inserts and
+ * voids, and game status (win) updates. Fires `onChange` per row change; the
+ * caller patches local state. Returns an unsubscribe function.
  *
- * Requires `game_players` and `action_logs` to be in the `supabase_realtime`
- * publication (see supabase/migrations/0001_init.sql).
+ * Requires these tables in the `supabase_realtime` publication
+ * (see supabase/migrations/0001_init.sql).
  */
 export function subscribeToGame(
   supabase: SupabaseClient,
   gameId: string,
-  onChange: (table: "game_players" | "action_logs", payload: unknown) => void,
+  onChange: (change: GameChange) => void,
 ): () => void {
+  const forward = (table: GameTable) => (payload: {
+    eventType: "INSERT" | "UPDATE" | "DELETE";
+    new: Record<string, unknown> | null;
+  }) => onChange({ table, eventType: payload.eventType, new: payload.new ?? null });
+
   const channel: RealtimeChannel = supabase
     .channel(`game:${gameId}`)
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "game_players", filter: `game_id=eq.${gameId}` },
-      (payload) => onChange("game_players", payload),
+      forward("game_players"),
     )
     .on(
       "postgres_changes",
-      { event: "INSERT", schema: "public", table: "action_logs", filter: `game_id=eq.${gameId}` },
-      (payload) => onChange("action_logs", payload),
+      { event: "*", schema: "public", table: "action_logs", filter: `game_id=eq.${gameId}` },
+      forward("action_logs"),
+    )
+    .on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: "games", filter: `id=eq.${gameId}` },
+      forward("games"),
     )
     .subscribe();
 

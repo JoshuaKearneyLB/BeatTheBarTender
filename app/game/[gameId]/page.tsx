@@ -1,27 +1,39 @@
 "use client";
 
 // Bartender mobile view: live board on top, event ticker, speed-tally pad
-// pinned within thumb reach at the bottom.
+// pinned within thumb reach at the bottom. In live mode a join card appears
+// until this device has a player in the game.
 
 import { use } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2, WifiOff } from "lucide-react";
 import BoardStrip from "@/components/board/BoardStrip";
 import EventTicker from "@/components/board/EventTicker";
+import JoinCard from "@/components/bartender/JoinCard";
 import TallyPad from "@/components/bartender/TallyPad";
 import { useGame } from "@/lib/useGame";
-import { isDemoMode } from "@/lib/supabase/client";
-import type { ActionDef } from "@/lib/types";
 
 export default function GamePage({ params }: { params: Promise<{ gameId: string }> }) {
   const { gameId } = use(params);
-  const { game, events, actions, tally, undo } = useGame(gameId);
-  const me = game.players[0]; // demo: you are player 1; auth wires this in v0.2
+  const { mode, error, game, events, actions, me, join, tally, undo } = useGame(gameId);
 
-  function handleTally(action: ActionDef, receipt?: File) {
-    // Demo mode keeps the File local; Supabase mode uploads it to the
-    // 'receipts' bucket and stores the path on the action_logs row.
-    tally(me.id, action, receipt ? URL.createObjectURL(receipt) : undefined);
+  if (mode === "connecting") {
+    return (
+      <main className="flex min-h-dvh items-center justify-center gap-2 text-cream-400">
+        <Loader2 className="size-5 animate-spin" /> Connecting to the shift…
+      </main>
+    );
+  }
+  if (mode === "error" || !game) {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-3 px-6 text-center">
+        <WifiOff className="size-8 text-danger-400" />
+        <p className="text-danger-400">{error ?? "Could not load the game."}</p>
+        <Link href="/" className="text-sm text-cream-400 underline">
+          Back home
+        </Link>
+      </main>
+    );
   }
 
   return (
@@ -30,15 +42,13 @@ export default function GamePage({ params }: { params: Promise<{ gameId: string 
         <Link href="/" className="flex items-center gap-1 text-sm text-cream-400">
           <ArrowLeft className="size-4" /> {game.name}
         </Link>
-        {isDemoMode() && (
-          <span className="rounded-full border border-brass-500/50 px-2 py-0.5 text-xs text-brass-400">
-            Demo Mode
-          </span>
-        )}
+        <span className="rounded-full border border-brass-500/50 px-2 py-0.5 text-xs text-brass-400">
+          {mode === "demo" ? "Demo Mode" : "Live"}
+        </span>
       </header>
 
       <section>
-        <BoardStrip game={game} meId={me.id} />
+        <BoardStrip game={game} meId={me?.id} />
       </section>
 
       <section className="min-h-20 rounded-xl border border-bar-600 bg-bar-800 p-3">
@@ -46,13 +56,11 @@ export default function GamePage({ params }: { params: Promise<{ gameId: string 
       </section>
 
       <div className="mt-auto pb-2">
-        <TallyPad
-          game={game}
-          player={me}
-          actions={actions}
-          onTally={handleTally}
-          onUndo={() => undo(me.id)}
-        />
+        {me ? (
+          <TallyPad game={game} player={me} actions={actions} onTally={tally} onUndo={undo} />
+        ) : (
+          <JoinCard gameName={game.name} onJoin={join} />
+        )}
       </div>
     </main>
   );

@@ -40,6 +40,8 @@ export type GameStatus = "lobby" | "active" | "paused" | "finished";
 
 export interface Player {
   id: string;
+  /** Supabase profile id in live mode; absent in Demo Mode. */
+  profileId?: string;
   name: string;
   token: string; // emoji game piece
   position: number; // tile index
@@ -54,7 +56,10 @@ export interface LoggedAction {
   playerId: string;
   actionType: ActionType;
   units: number;
+  /** Demo Mode: local object URL for the captured photo. */
   receiptUrl?: string;
+  /** Live mode: path in the private 'receipts' storage bucket. */
+  receiptPath?: string;
   createdAt: string;
   voided?: boolean;
 }
@@ -75,5 +80,5 @@ export interface Game {
 export interface BoardEvent {
   playerId: string;
   message: string;
-  kind: "advance" | "bonus" | "setback" | "checkpoint" | "win" | "override";
+  kind: "advance" | "bonus" | "setback" | "checkpoint" | "win" | "override" | "join";
 }
