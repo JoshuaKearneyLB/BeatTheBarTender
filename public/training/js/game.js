@@ -293,7 +293,7 @@ function renderRoundResult(choice, playerCorrect, playerPoints, houseScored, hou
     : `${state.difficulty.name} whiffed this one. No points for the house.`;
   box.innerHTML = `<p>${verdict}</p>
     <p class="house-line">${houseLine}</p>
-    <p class="serve-note">Served in a ${cur.cocktail.glass.toLowerCase()}, garnished with ${cur.cocktail.garnish.toLowerCase()}.</p>`;
+    <p class="serve-note">House spec garnish: ${cur.cocktail.garnish}.</p>`;
   box.classList.remove("hidden");
 
   $("player-score").textContent = state.playerScore;

@@ -42,6 +42,12 @@ screen over Realtime.
 - **Every tile is a quest** with a goal type (`volume` / `upsell` / `task`),
   a target, and a **move value**: standard quests advance 1 tile, Hard
   Quests (every 7th tile) 2, Boss Quests (every 10th) 3.
+- **The official menu drives the goals.** `lib/recipes.ts` holds the
+  venue's 25-drink menu — exact specs, spirits, and garnishes, across
+  Hacien house signatures, spritzes, classics, and non-alcoholic serves.
+  Preset boards generate quests like "Sell 10 Hacien Pineapple Spritzes",
+  and the builder's **From menu…** dropdown lets managers target any drink
+  or a whole category ("Sell 15 non-alcoholic cocktails").
 - **Campaign Preset Builder:** pick "Cocktail Focus", "High-Margin
   Spirits", or "Balanced Shift" — or open the tile list and edit any tile's
   goal text, type, target, and move value before launch.
@@ -85,6 +91,7 @@ components/
   board/BoardStrip.tsx      Scrolling tile strip w/ animated tokens + ×2/×3 badges
   board/EventTicker.tsx     Play-by-play of board events
 lib/
+  recipes.ts                The official 25-drink menu: specs, categories, quest labels
   board.ts                  Presets + pure quest engine (mirrored in SQL)
   useGame.ts                One API, two engines (demo / live)
   useDemoGame.ts            Local reducer, seeded players + pending submission
@@ -98,7 +105,8 @@ supabase/
 scripts/
   test-db.sh                Throwaway-Postgres test runner (npm run test:db)
   smoke.mjs                 Browser smoke test, mobile viewport (npm run test:e2e)
-public/training/            “Beat the Bartender” trivia mini-game
+public/training/            “Beat the Bartender” trivia on the official menu
+                            (data/cocktails.js mirrors lib/recipes.ts — keep in sync)
 ```
 
 ## Testing

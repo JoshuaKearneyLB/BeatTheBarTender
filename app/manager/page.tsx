@@ -8,9 +8,19 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ChevronDown, ChevronUp, Dice5, Loader2, ShieldCheck } from "lucide-react";
 import { CAMPAIGN_PRESETS, generateCampaignBoard } from "@/lib/board";
+import {
+  byCategory,
+  CATEGORY_LABELS,
+  CATEGORY_QUEST_LABELS,
+  MENU,
+  sellQuestLabel,
+  type MenuCategory,
+} from "@/lib/recipes";
 import { isDemoMode } from "@/lib/supabase/client";
 import { createCampaignLive } from "@/lib/supabase/db";
 import type { GoalType, Tile, TileGoal } from "@/lib/types";
+
+const CATEGORY_ORDER: MenuCategory[] = ["signature", "spritz", "classic", "non_alcoholic"];
 
 /** Per-tile customization layered over the generated preset board. */
 type TileEdit = Omit<Partial<Tile>, "goal"> & { goal?: Partial<TileGoal> };
@@ -44,6 +54,19 @@ export default function ManagerSetup() {
       return e ? { ...t, ...e, goal: { ...t.goal, ...e.goal } } : t;
     });
   }, [boardLength, preset, seed, edits]);
+
+  /** Build a "Sell N <drink>" goal from a menu pick (or a whole category). */
+  function applyMenuPick(position: number, target: number, value: string) {
+    if (value.startsWith("cat:")) {
+      const cat = value.slice(4) as MenuCategory;
+      editTile(position, { goal: { label: CATEGORY_QUEST_LABELS[cat](target), type: "volume" } });
+      return;
+    }
+    const recipe = MENU.find((r) => r.id === value);
+    if (recipe) {
+      editTile(position, { goal: { label: sellQuestLabel(recipe, target), type: "volume" } });
+    }
+  }
 
   function editTile(position: number, patch: TileEdit) {
     setEdits((prev) => {
@@ -194,6 +217,30 @@ export default function ManagerSetup() {
                       className="min-w-40 flex-1 rounded-lg border border-bar-600 bg-bar-800 px-2 py-1.5 text-sm text-cream-100 outline-none focus:border-brass-500"
                     />
                     <select
+                      value=""
+                      onChange={(e) => applyMenuPick(t.position, t.goal.target, e.target.value)}
+                      aria-label={`Pick a menu drink for tile ${t.position + 1}`}
+                      className="max-w-32 rounded-lg border border-brass-500/50 bg-bar-800 px-1.5 py-1.5 text-sm text-brass-400"
+                    >
+                      <option value="">From menu…</option>
+                      {CATEGORY_ORDER.map((cat) => (
+                        <optgroup key={cat} label={CATEGORY_LABELS[cat]}>
+                          {byCategory(cat).map((r) => (
+                            <option key={r.id} value={r.id}>
+                              {r.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                      <optgroup label="Whole category">
+                        {CATEGORY_ORDER.map((cat) => (
+                          <option key={`cat:${cat}`} value={`cat:${cat}`}>
+                            Any: {CATEGORY_LABELS[cat]}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </select>
+                    <select
                       value={t.goal.type}
                       onChange={(e) =>
                         editTile(t.position, { goal: { type: e.target.value as GoalType } })
@@ -212,9 +259,14 @@ export default function ManagerSetup() {
                       min={1}
                       max={999}
                       value={t.goal.target}
-                      onChange={(e) =>
-                        editTile(t.position, { goal: { target: Number(e.target.value) || 1 } })
-                      }
+                      onChange={(e) => {
+                        const target = Number(e.target.value) || 1;
+                        // Keep "Sell N …" labels in step with the target.
+                        const label = /^(Sell|Upsell) \d+ /.test(t.goal.label)
+                          ? t.goal.label.replace(/\d+/, String(target))
+                          : undefined;
+                        editTile(t.position, { goal: label ? { target, label } : { target } });
+                      }}
                       aria-label={`Target for tile ${t.position + 1}`}
                       className="w-16 rounded-lg border border-bar-600 bg-bar-800 px-2 py-1.5 text-sm text-cream-100"
                     />

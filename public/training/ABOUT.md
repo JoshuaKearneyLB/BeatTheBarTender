@@ -1,9 +1,11 @@
 # 🍸 Beat the Bartender
 
-A fast, zero-dependency cocktail trivia game. Each round, a mystery cocktail's
-ingredients are revealed one at a time — guess the drink before the house
-bartender locks in their answer. The fewer clues you need, the more you score.
-Highest tab after ten rounds wins the shift.
+A fast, zero-dependency cocktail trivia game built on the venue's **official
+25-drink menu** — exact house specs, measures, and garnishes. Each round, a
+mystery drink's build is revealed one line at a time — guess it before the
+house bartender locks in their answer. The fewer clues you need, the more you
+score. Highest tab after ten rounds wins the shift. Doubles as spec training
+for new staff.
 
 ## Play
 
@@ -36,7 +38,8 @@ Then visit the printed URL.
 index.html        Markup and screens (start / game / results)
 css/styles.css    Speakeasy-dark theme
 js/game.js        Game loop, scoring, house-bartender AI, rendering
-data/cocktails.js 36 classic cocktails with ingredients ordered least-to-most revealing
+data/cocktails.js The official 25-drink menu (keep in sync with lib/recipes.ts),
+                  ingredients ordered least-to-most revealing
 ```
 
 ## Ideas on the back bar

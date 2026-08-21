@@ -1,223 +1,224 @@
 /**
- * Cocktail dataset for Beat the Bartender.
- * Ingredients are ordered roughly by how "revealing" they are —
- * the giveaway ingredient comes last so early clues stay ambiguous.
+ * Cocktail dataset for Beat the Bartender — the venue's official menu.
+ * KEEP IN SYNC with lib/recipes.ts (the app's canonical menu dataset).
+ *
+ * Ingredients are ordered least-to-most revealing for gameplay: commodity
+ * mixers first, the giveaway branded spirit last, so early clues stay
+ * ambiguous. Measures are the exact house spec — this doubles as spec
+ * training for new staff.
  */
 const COCKTAILS = [
+  // ---------- Hacien house signatures ----------
   {
-    name: "Margarita",
-    ingredients: ["Lime juice", "Orange liqueur", "Salt rim", "Tequila"],
-    garnish: "Lime wheel",
-    glass: "Coupe or rocks glass",
-  },
-  {
-    name: "Old Fashioned",
-    ingredients: ["Sugar cube", "Angostura bitters", "Orange peel", "Bourbon"],
-    garnish: "Orange twist",
-    glass: "Rocks glass",
-  },
-  {
-    name: "Mojito",
-    ingredients: ["Lime juice", "Sugar", "Soda water", "Mint leaves", "White rum"],
-    garnish: "Mint sprig",
-    glass: "Highball glass",
-  },
-  {
-    name: "Negroni",
-    ingredients: ["Sweet vermouth", "Orange peel", "Campari", "Gin"],
-    garnish: "Orange twist",
-    glass: "Rocks glass",
-  },
-  {
-    name: "Daiquiri",
-    ingredients: ["Lime juice", "Simple syrup", "White rum"],
-    garnish: "Lime wheel",
-    glass: "Coupe",
-  },
-  {
-    name: "Manhattan",
-    ingredients: ["Angostura bitters", "Sweet vermouth", "Maraschino cherry", "Rye whiskey"],
-    garnish: "Brandied cherry",
-    glass: "Coupe",
-  },
-  {
-    name: "Martini",
-    ingredients: ["Dry vermouth", "Olive or lemon twist", "Gin"],
-    garnish: "Olive",
-    glass: "Martini glass",
-  },
-  {
-    name: "Whiskey Sour",
-    ingredients: ["Lemon juice", "Simple syrup", "Egg white", "Bourbon"],
-    garnish: "Lemon wedge and cherry",
-    glass: "Rocks glass",
-  },
-  {
-    name: "Moscow Mule",
-    ingredients: ["Lime juice", "Ginger beer", "Copper mug", "Vodka"],
+    name: "Pineapple Tommy's Margarita",
+    ingredients: ["25ml lime juice", "25ml agave syrup", "50ml Hacien Pineapple Tequila Blanco"],
     garnish: "Lime wedge",
-    glass: "Copper mug",
   },
   {
-    name: "Espresso Martini",
-    ingredients: ["Simple syrup", "Coffee liqueur", "Fresh espresso", "Vodka"],
-    garnish: "Three coffee beans",
-    glass: "Martini glass",
+    name: "Hugo Lemon and Lime Spritz",
+    ingredients: [
+      "Soda top",
+      "75ml prosecco",
+      "25ml elderflower cordial",
+      "40ml Hacien Lemon & Lime Tequila",
+    ],
+    garnish: "Lime wedge & mint sprig",
   },
   {
-    name: "Piña Colada",
-    ingredients: ["Pineapple juice", "Coconut cream", "White rum"],
-    garnish: "Pineapple wedge",
-    glass: "Hurricane glass",
+    name: "Limoncello Garden Spritz",
+    ingredients: [
+      "Soda top",
+      "75ml prosecco",
+      "25ml Hacien Tequila Blanco",
+      "25ml Limoncello Isolabella",
+    ],
+    garnish: "Cucumber wheel, lemon wheel & mint sprig",
+  },
+  {
+    name: "Hacien Cucumber and Mint Spritz",
+    ingredients: [
+      "Soda top",
+      "25ml lime juice",
+      "25ml agave syrup",
+      "35ml Sauvignon Blanc",
+      "35ml Hacien Tequila Blanco",
+    ],
+    garnish: "Cucumber wheel & mint sprig",
+  },
+  {
+    name: "Hacien Pineapple Spritz",
+    ingredients: [
+      "Soda top",
+      "15ml lime juice",
+      "15ml honey",
+      "10 mint leaves",
+      "4 raspberries",
+      "50ml Hacien Pineapple Tequila Blanco",
+    ],
+    garnish: "Raspberry & mint sprig",
+  },
+  {
+    name: "Grown-Up Drumstick",
+    ingredients: [
+      "15ml lime juice",
+      "15ml vanilla syrup",
+      "15ml Chambord",
+      "50ml Summer Berries Tequila",
+    ],
+    garnish: "Strawberry",
+  },
+  {
+    name: "Summer Royale Spritz",
+    ingredients: [
+      "Soda top",
+      "75ml prosecco",
+      "15ml vanilla syrup",
+      "15ml Chambord",
+      "40ml Hacien Summer Berries Tequila",
+    ],
+    garnish: "Strawberry",
+  },
+  {
+    name: "Shadowed Coffee Tequila Negroni",
+    ingredients: ["25ml Martini Rosso", "25ml Campari", "25ml Hacien Coffee Tequila"],
+    garnish: "Orange peel or slice",
+  },
+
+  // ---------- Spritzes ----------
+  {
+    name: "Elderflower Spritz",
+    ingredients: ["Soda top", "75ml Romeo Prosecco", "25ml St-Germain elderflower liqueur"],
+    garnish: "Lime wedge or lemon wheel & mint sprig",
+  },
+  {
+    name: "Sarti Spritz",
+    ingredients: ["Soda top", "75ml Romeo Prosecco", "50ml Sarti"],
+    garnish: "Lime wedge",
+  },
+  {
+    name: "Blush Spritz",
+    ingredients: ["25ml soda", "75ml prosecco", "25ml Chambord", "25ml Isolabella Limoncello"],
+    garnish: "Lemon slice",
+  },
+  {
+    name: "Chambord Royale",
+    ingredients: ["125ml Romeo Prosecco", "25ml Chambord Black Raspberry Liqueur"],
+    garnish: "Raspberry or seasonal berry",
   },
   {
     name: "Aperol Spritz",
-    ingredients: ["Soda water", "Prosecco", "Aperol"],
-    garnish: "Orange slice",
-    glass: "Wine glass",
+    ingredients: ["Soda top", "75ml Romeo Prosecco", "50ml Aperol"],
+    garnish: "Orange wheel slice",
+  },
+
+  // ---------- Classics ----------
+  {
+    name: "Mojito / Mojito Raspberry",
+    ingredients: [
+      "100ml soda",
+      "Mint leaves",
+      "4 lime wedges (muddled)",
+      "10ml Monin Gomme",
+      "50ml Bacardi Carta Blanca or Bacardi Raspberry",
+    ],
+    garnish: "Mint sprig",
+  },
+  {
+    name: "Tokyo Iced Tea",
+    ingredients: [
+      "25ml lemonade",
+      "15ml Smirnoff",
+      "15ml Gordon's gin",
+      "15ml Bacardi",
+      "15ml silver tequila",
+      "15ml Midori",
+    ],
+    garnish: "Lime wedge",
+  },
+  {
+    name: "Woodford Old Fashioned",
+    ingredients: [
+      "Brown sugar cube",
+      "2 dashes Angostura bitters + dash of water",
+      "50ml Woodford Reserve",
+    ],
+    garnish: "Orange slice & glacé cherry",
+  },
+  {
+    name: "Negroni / Negroni Sevilla",
+    ingredients: [
+      "25ml Martini Rosso",
+      "25ml Campari",
+      "25ml Tanqueray London Dry or Tanqueray Flor de Sevilla",
+    ],
+    garnish: "Orange slice or peel",
+  },
+  {
+    name: "Gin Tiki",
+    ingredients: ["10ml vanilla syrup", "75ml pineapple juice", "50ml Gordon's gin", "25ml Malibu"],
+    garnish: "3 glacé cherries",
   },
   {
     name: "Cosmopolitan",
-    ingredients: ["Lime juice", "Orange liqueur", "Cranberry juice", "Citrus vodka"],
-    garnish: "Lime wheel",
-    glass: "Martini glass",
+    ingredients: [
+      "Juice of half a lime",
+      "50ml cranberry juice",
+      "25ml Cointreau",
+      "50ml Smirnoff vodka",
+    ],
+    garnish: "Orange slice or peel",
   },
   {
-    name: "Mai Tai",
-    ingredients: ["Lime juice", "Orange curaçao", "Orgeat syrup", "Aged rum"],
-    garnish: "Mint sprig and lime",
-    glass: "Rocks glass",
+    name: "Passionfruit Martini",
+    ingredients: [
+      "10ml Monin Gomme",
+      "25ml prosecco",
+      "50ml Smirnoff",
+      "15ml Passoa",
+      "25ml passionfruit juice/pulp/coulis/purée",
+    ],
+    garnish: "Lime wedge & half a passionfruit",
   },
   {
-    name: "Gimlet",
-    ingredients: ["Lime juice", "Simple syrup", "Gin"],
-    garnish: "Lime wheel",
-    glass: "Coupe",
+    name: "Espresso Martini",
+    ingredients: ["15ml Monin Gomme", "25ml Smirnoff vodka", "25ml Tia Maria", "Double espresso"],
+    garnish: "3 coffee beans",
   },
   {
-    name: "Dark 'n' Stormy",
-    ingredients: ["Lime wedge", "Ginger beer", "Dark rum"],
-    garnish: "Lime wedge",
-    glass: "Highball glass",
+    name: "Bramble Berry",
+    ingredients: [
+      "Juice of half a lemon",
+      "25ml Crème de Cassis or Chambord",
+      "50ml Tanqueray Blackcurrant Royale gin",
+    ],
+    garnish: "Berries & lemon slice",
+  },
+
+  // ---------- Non-alcoholic ----------
+  {
+    name: "Non-Alcoholic Pineapple Mojito",
+    ingredients: [
+      "25ml lime juice",
+      "8-10 mint leaves",
+      "2 lime wedges (muddled)",
+      "15ml grenadine syrup",
+      "150-200ml pineapple juice",
+    ],
+    garnish: "Mint sprig & lime wedge",
   },
   {
-    name: "Paloma",
-    ingredients: ["Lime juice", "Salt rim", "Grapefruit soda", "Tequila"],
-    garnish: "Grapefruit wedge",
-    glass: "Highball glass",
+    name: "Non-Alcoholic St. Clements Spritz",
+    ingredients: ["50ml lemonade", "Squeeze of lemon juice", "Dash of Diet Coke", "75ml orange juice"],
+    garnish: "Orange wheel, lemon wheel & rosemary sprig",
   },
   {
-    name: "Tom Collins",
-    ingredients: ["Lemon juice", "Simple syrup", "Soda water", "Gin"],
-    garnish: "Lemon wheel and cherry",
-    glass: "Collins glass",
-  },
-  {
-    name: "Sazerac",
-    ingredients: ["Sugar cube", "Peychaud's bitters", "Absinthe rinse", "Rye whiskey"],
-    garnish: "Lemon twist",
-    glass: "Rocks glass",
-  },
-  {
-    name: "French 75",
-    ingredients: ["Lemon juice", "Simple syrup", "Champagne", "Gin"],
-    garnish: "Lemon twist",
-    glass: "Flute",
-  },
-  {
-    name: "Bloody Mary",
-    ingredients: ["Lemon juice", "Worcestershire sauce", "Tomato juice", "Vodka"],
-    garnish: "Celery stalk",
-    glass: "Highball glass",
-  },
-  {
-    name: "Bellini",
-    ingredients: ["White peach purée", "Prosecco"],
-    garnish: "Peach slice",
-    glass: "Flute",
-  },
-  {
-    name: "Amaretto Sour",
-    ingredients: ["Lemon juice", "Simple syrup", "Egg white", "Amaretto"],
-    garnish: "Lemon twist and cherry",
-    glass: "Rocks glass",
-  },
-  {
-    name: "Caipirinha",
-    ingredients: ["Lime wedges", "Sugar", "Cachaça"],
-    garnish: "Lime wheel",
-    glass: "Rocks glass",
-  },
-  {
-    name: "Long Island Iced Tea",
-    ingredients: ["Lemon juice", "Triple sec", "Cola", "Vodka, gin, rum, and tequila"],
-    garnish: "Lemon wedge",
-    glass: "Highball glass",
-  },
-  {
-    name: "Mint Julep",
-    ingredients: ["Sugar", "Crushed ice", "Mint leaves", "Bourbon"],
-    garnish: "Mint bouquet",
-    glass: "Julep tin",
-  },
-  {
-    name: "Penicillin",
-    ingredients: ["Lemon juice", "Honey-ginger syrup", "Islay scotch float", "Blended scotch"],
-    garnish: "Candied ginger",
-    glass: "Rocks glass",
-  },
-  {
-    name: "Paper Plane",
-    ingredients: ["Lemon juice", "Aperol", "Amaro Nonino", "Bourbon"],
-    garnish: "None",
-    glass: "Coupe",
-  },
-  {
-    name: "Last Word",
-    ingredients: ["Lime juice", "Maraschino liqueur", "Green Chartreuse", "Gin"],
-    garnish: "Brandied cherry",
-    glass: "Coupe",
-  },
-  {
-    name: "Corpse Reviver No. 2",
-    ingredients: ["Lemon juice", "Orange liqueur", "Lillet Blanc", "Absinthe rinse", "Gin"],
-    garnish: "Orange twist",
-    glass: "Coupe",
-  },
-  {
-    name: "Sidecar",
-    ingredients: ["Lemon juice", "Sugar rim", "Orange liqueur", "Cognac"],
-    garnish: "Orange twist",
-    glass: "Coupe",
-  },
-  {
-    name: "Boulevardier",
-    ingredients: ["Sweet vermouth", "Campari", "Bourbon"],
-    garnish: "Orange twist",
-    glass: "Rocks glass",
-  },
-  {
-    name: "Clover Club",
-    ingredients: ["Lemon juice", "Raspberry syrup", "Egg white", "Gin"],
-    garnish: "Skewered raspberries",
-    glass: "Coupe",
-  },
-  {
-    name: "Whiskey Highball",
-    ingredients: ["Soda water", "Lemon twist", "Japanese whisky"],
-    garnish: "Lemon twist",
-    glass: "Highball glass",
-  },
-  {
-    name: "Gin Basil Smash",
-    ingredients: ["Lemon juice", "Simple syrup", "Fresh basil", "Gin"],
-    garnish: "Basil leaf",
-    glass: "Rocks glass",
-  },
-  {
-    name: "Irish Coffee",
-    ingredients: ["Brown sugar", "Hot coffee", "Whipped cream", "Irish whiskey"],
-    garnish: "Cream float",
-    glass: "Toddy glass",
+    name: "Non-Alcoholic Cranberry Cooler",
+    ingredients: [
+      "25ml lemonade",
+      "25ml lime juice",
+      "15ml grenadine syrup",
+      "50ml cranberry juice",
+    ],
+    garnish: "Lemon wheel & berries",
   },
 ];

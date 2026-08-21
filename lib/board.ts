@@ -7,15 +7,20 @@
 // (1 standard, 2-3 hard/boss), then any landing effect (bonus/setback move)
 // applies once, without chaining. Completing the FINAL tile's quest wins.
 
+import { byCategory, CATEGORY_QUEST_LABELS, sellQuestLabel } from "./recipes";
 import type { BoardEvent, Game, GoalType, Player, Tile, TileGoal, TileType } from "./types";
 
 // ---------- campaign presets ----------
+// Goals are drawn from the venue's official menu (lib/recipes.ts): a preset
+// is a weighted pool of goal makers — most pick a concrete drink ("Sell 10
+// Hacien Pineapple Spritzes"), some target a category, a few are service
+// tasks.
 
 interface GoalTemplate {
   type: GoalType;
-  label: (n: number) => string;
   /** [min, max] target range for standard tiles; hard/boss tiles scale up. */
   range: [number, number];
+  label: (n: number, rand: () => number) => string;
 }
 
 interface PresetDef {
@@ -26,56 +31,74 @@ interface PresetDef {
   pool: Array<[GoalTemplate, number]>;
 }
 
-const VOLUME_COCKTAILS: GoalTemplate = {
+function pickFrom<T>(rand: () => number, arr: T[]): T {
+  return arr[Math.floor(rand() * arr.length)];
+}
+
+const SIGNATURES = byCategory("signature");
+const SPRITZES = byCategory("spritz");
+const CLASSICS = byCategory("classic");
+const NON_ALC = byCategory("non_alcoholic");
+// The margin-makers: premium spirits and liqueur-led serves.
+const PREMIUM = CLASSICS.filter((r) =>
+  ["woodford-old-fashioned", "espresso-martini", "negroni", "passionfruit-martini"].includes(r.id),
+).concat(SPRITZES.filter((r) => ["chambord-royale", "sarti-spritz"].includes(r.id)));
+
+const SELL_SIGNATURE: GoalTemplate = {
   type: "volume",
-  label: (n) => `Sell ${n} cocktails`,
-  range: [8, 15],
-};
-const VOLUME_SIGNATURE: GoalTemplate = {
-  type: "volume",
-  label: (n) => `Sell ${n} house signature cocktails`,
-  range: [4, 8],
-};
-const VOLUME_DRAFTS: GoalTemplate = {
-  type: "volume",
-  label: (n) => `Sell ${n} premium drafts`,
   range: [6, 12],
+  label: (n, rand) => sellQuestLabel(pickFrom(rand, SIGNATURES), n),
 };
-const UPSELL_SPIRITS: GoalTemplate = {
+const SELL_SPRITZ: GoalTemplate = {
+  type: "volume",
+  range: [6, 12],
+  label: (n, rand) => sellQuestLabel(pickFrom(rand, SPRITZES), n),
+};
+const SELL_CLASSIC: GoalTemplate = {
+  type: "volume",
+  range: [6, 10],
+  label: (n, rand) => sellQuestLabel(pickFrom(rand, CLASSICS), n),
+};
+const UPSELL_PREMIUM: GoalTemplate = {
   type: "upsell",
-  label: (n) => `Upsell ${n} top-shelf spirits`,
   range: [3, 6],
+  label: (n, rand) => sellQuestLabel(pickFrom(rand, PREMIUM), n),
 };
-const UPSELL_PAIRING: GoalTemplate = {
-  type: "upsell",
-  label: (n) => `Land ${n} food or dessert pairings`,
-  range: [3, 5],
+const SELL_NON_ALC: GoalTemplate = {
+  type: "volume",
+  range: [4, 8],
+  label: (n) => CATEGORY_QUEST_LABELS.non_alcoholic(n),
+};
+const SELL_ANY_SIGNATURE: GoalTemplate = {
+  type: "volume",
+  range: [8, 14],
+  label: (n) => CATEGORY_QUEST_LABELS.signature(n),
 };
 const TASK_REVIEW: GoalTemplate = {
   type: "task",
-  label: () => "Get a 5-star review mentioning you",
   range: [1, 1],
+  label: () => "Get a 5-star review mentioning you",
 };
 const TASK_ZERO_WASTE: GoalTemplate = {
   type: "task",
-  label: () => "Run a zero-waste shift (no comps, no spills)",
   range: [1, 1],
+  label: () => "Run a zero-waste shift (no comps, no spills)",
 };
 const TASK_SPEED: GoalTemplate = {
   type: "task",
-  label: () => "Clear the rail — no ticket over 4 minutes",
   range: [1, 1],
+  label: () => "Clear the rail — no ticket over 4 minutes",
 };
 
 export const CAMPAIGN_PRESETS: PresetDef[] = [
   {
     key: "cocktail_focus",
     label: "Cocktail Focus",
-    blurb: "Volume on the shaker: cocktails and signatures carry the month.",
+    blurb: "Volume on the shaker: Hacien signatures and classics carry the month.",
     pool: [
-      [VOLUME_COCKTAILS, 5],
-      [VOLUME_SIGNATURE, 3],
-      [UPSELL_SPIRITS, 1],
+      [SELL_SIGNATURE, 5],
+      [SELL_CLASSIC, 3],
+      [SELL_ANY_SIGNATURE, 1],
       [TASK_REVIEW, 1],
       [TASK_SPEED, 1],
     ],
@@ -83,23 +106,24 @@ export const CAMPAIGN_PRESETS: PresetDef[] = [
   {
     key: "high_margin",
     label: "High-Margin Spirits",
-    blurb: "Push the top shelf: upsells and pairings over pure volume.",
+    blurb: "Push the top shelf: Woodford, Chambord Royales, and premium serves.",
     pool: [
-      [UPSELL_SPIRITS, 5],
-      [UPSELL_PAIRING, 3],
-      [VOLUME_SIGNATURE, 2],
+      [UPSELL_PREMIUM, 5],
+      [SELL_SPRITZ, 3],
+      [SELL_SIGNATURE, 2],
       [TASK_ZERO_WASTE, 1],
     ],
   },
   {
     key: "balanced",
     label: "Balanced Shift",
-    blurb: "A bit of everything: volume, upsells, and service tasks.",
+    blurb: "A bit of everything: signatures, spritzes, zero-proof, and service tasks.",
     pool: [
-      [VOLUME_COCKTAILS, 3],
-      [VOLUME_DRAFTS, 2],
-      [UPSELL_SPIRITS, 2],
-      [UPSELL_PAIRING, 1],
+      [SELL_SIGNATURE, 3],
+      [SELL_SPRITZ, 2],
+      [SELL_CLASSIC, 2],
+      [SELL_NON_ALC, 1],
+      [UPSELL_PREMIUM, 1],
       [TASK_REVIEW, 1],
       [TASK_ZERO_WASTE, 1],
       [TASK_SPEED, 1],
@@ -132,7 +156,7 @@ function weightedPick<T>(rand: () => number, pool: Array<[T, number]>): T {
 function makeGoal(rand: () => number, tpl: GoalTemplate, scale = 1): TileGoal {
   const [min, max] = tpl.range;
   const target = Math.max(1, Math.round((min + rand() * (max - min)) * scale));
-  return { type: tpl.type, label: tpl.label(target), target };
+  return { type: tpl.type, label: tpl.label(target, rand), target };
 }
 
 /**
@@ -151,7 +175,8 @@ export function generateCampaignBoard(length: number, presetKey: string, seed = 
     const isFinish = i === length - 1;
     const isBoss = !isFinish && i > 0 && i % 10 === 0;
     const isHard = !isFinish && !isBoss && i > 0 && i % 7 === 0;
-    const tpl = weightedPick(rand, preset.pool);
+    // Day 1 always opens with a straightforward signature-volume quest.
+    const tpl = i === 0 ? SELL_SIGNATURE : weightedPick(rand, preset.pool);
     const goal = makeGoal(rand, tpl, isFinish || isBoss ? 2 : isHard ? 1.5 : 1);
 
     let type: TileType = "progress";

@@ -29,8 +29,13 @@ try {
   await page.waitForURL("**/game/demo");
   await page.waitForSelector("text=Demo Mode");
 
-  // Quest card shows the tile-1 goal with a progress stepper
+  // Quest card shows the tile-1 goal with a progress stepper; the opener
+  // quest must come from the official menu ("Sell N <drink>")
   await page.waitForSelector("text=Tile 1");
+  const questLabel = await page.locator("h2.text-lg").innerText();
+  if (!/^Sell \d+ /.test(questLabel)) {
+    throw new Error(`opening quest not menu-based: "${questLabel}"`);
+  }
   const plus = page.locator('[aria-label="Increase progress"]');
   for (let i = 0; i < 3; i++) {
     await plus.click();
@@ -48,6 +53,14 @@ try {
   await page.goto(BASE + "/manager");
   await page.waitForSelector("text=Build the campaign");
   await page.waitForSelector("text=Cocktail Focus"); // presets rendered
+  // Quest builder: tile list carries the official-menu drink dropdown
+  await page.click("text=Customize individual tiles");
+  await page.waitForSelector('select[aria-label="Pick a menu drink for tile 1"]');
+  const menuOptions = await page
+    .locator('select[aria-label="Pick a menu drink for tile 1"] option')
+    .count();
+  if (menuOptions < 26) throw new Error(`menu dropdown too small: ${menuOptions} options`);
+  await page.click("text=Customize individual tiles"); // collapse again
   await page.click("text=Launch the marathon");
   await page.waitForURL("**/manager/demo");
   await page.waitForSelector("text=Approval queue");
@@ -57,10 +70,16 @@ try {
   await page.waitForSelector("text=approved"); // history row
   await page.screenshot({ path: "/tmp/baropoly-manager.png" });
 
-  // Training mini-game still served
+  // Training mini-game serves the official 25-drink menu
   const res = await page.goto(BASE + "/training/index.html");
   if (res.status() !== 200) throw new Error("training game not served");
   await page.waitForSelector("text=Beat the Bartender");
+  const drinkCount = await page.evaluate(() => COCKTAILS.length);
+  if (drinkCount !== 25) throw new Error(`training menu has ${drinkCount} drinks, expected 25`);
+  const hasHouse = await page.evaluate(() =>
+    COCKTAILS.some((c) => c.name === "Hacien Pineapple Spritz"),
+  );
+  if (!hasHouse) throw new Error("official menu drink missing from training data");
 
   if (errors.length) throw new Error("JS errors:\n" + errors.join("\n"));
   console.log("SMOKE PASSED");
