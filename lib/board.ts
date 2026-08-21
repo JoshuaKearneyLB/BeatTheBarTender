@@ -1,27 +1,113 @@
 // The board engine: pure functions so the same rules run in the browser
-// (optimistic updates) and, later, in a server action / edge function
-// (authoritative state).
+// (optimistic updates / Demo Mode) and, mirrored in plpgsql, in Postgres
+// (authoritative state — see supabase/migrations/0003_campaign_quests.sql).
+//
+// v0.3 movement model: each tile carries a manager-configured quest. When a
+// quest submission is approved, the player advances by the tile's moveValue
+// (1 standard, 2-3 hard/boss), then any landing effect (bonus/setback move)
+// applies once, without chaining. Completing the FINAL tile's quest wins.
 
-import type { BoardEvent, Game, Player, Tile } from "./types";
+import type { BoardEvent, Game, GoalType, Player, Tile, TileGoal, TileType } from "./types";
 
-const SETBACKS: Array<Pick<Tile, "title" | "description" | "move">> = [
-  { title: "Spill on the Rail", description: "Move back 2 spaces.", move: -2 },
-  { title: "Keg Kicked", description: "Change it over — back 1 space.", move: -1 },
-  { title: "Card Declined", description: "Comp the round. Back 2 spaces.", move: -2 },
-  { title: "Glass Wash Down", description: "Polish by hand — back 1 space.", move: -1 },
+// ---------- campaign presets ----------
+
+interface GoalTemplate {
+  type: GoalType;
+  label: (n: number) => string;
+  /** [min, max] target range for standard tiles; hard/boss tiles scale up. */
+  range: [number, number];
+}
+
+interface PresetDef {
+  key: string;
+  label: string;
+  blurb: string;
+  /** Weighted goal pool: [template, weight]. */
+  pool: Array<[GoalTemplate, number]>;
+}
+
+const VOLUME_COCKTAILS: GoalTemplate = {
+  type: "volume",
+  label: (n) => `Sell ${n} cocktails`,
+  range: [8, 15],
+};
+const VOLUME_SIGNATURE: GoalTemplate = {
+  type: "volume",
+  label: (n) => `Sell ${n} house signature cocktails`,
+  range: [4, 8],
+};
+const VOLUME_DRAFTS: GoalTemplate = {
+  type: "volume",
+  label: (n) => `Sell ${n} premium drafts`,
+  range: [6, 12],
+};
+const UPSELL_SPIRITS: GoalTemplate = {
+  type: "upsell",
+  label: (n) => `Upsell ${n} top-shelf spirits`,
+  range: [3, 6],
+};
+const UPSELL_PAIRING: GoalTemplate = {
+  type: "upsell",
+  label: (n) => `Land ${n} food or dessert pairings`,
+  range: [3, 5],
+};
+const TASK_REVIEW: GoalTemplate = {
+  type: "task",
+  label: () => "Get a 5-star review mentioning you",
+  range: [1, 1],
+};
+const TASK_ZERO_WASTE: GoalTemplate = {
+  type: "task",
+  label: () => "Run a zero-waste shift (no comps, no spills)",
+  range: [1, 1],
+};
+const TASK_SPEED: GoalTemplate = {
+  type: "task",
+  label: () => "Clear the rail — no ticket over 4 minutes",
+  range: [1, 1],
+};
+
+export const CAMPAIGN_PRESETS: PresetDef[] = [
+  {
+    key: "cocktail_focus",
+    label: "Cocktail Focus",
+    blurb: "Volume on the shaker: cocktails and signatures carry the month.",
+    pool: [
+      [VOLUME_COCKTAILS, 5],
+      [VOLUME_SIGNATURE, 3],
+      [UPSELL_SPIRITS, 1],
+      [TASK_REVIEW, 1],
+      [TASK_SPEED, 1],
+    ],
+  },
+  {
+    key: "high_margin",
+    label: "High-Margin Spirits",
+    blurb: "Push the top shelf: upsells and pairings over pure volume.",
+    pool: [
+      [UPSELL_SPIRITS, 5],
+      [UPSELL_PAIRING, 3],
+      [VOLUME_SIGNATURE, 2],
+      [TASK_ZERO_WASTE, 1],
+    ],
+  },
+  {
+    key: "balanced",
+    label: "Balanced Shift",
+    blurb: "A bit of everything: volume, upsells, and service tasks.",
+    pool: [
+      [VOLUME_COCKTAILS, 3],
+      [VOLUME_DRAFTS, 2],
+      [UPSELL_SPIRITS, 2],
+      [UPSELL_PAIRING, 1],
+      [TASK_REVIEW, 1],
+      [TASK_ZERO_WASTE, 1],
+      [TASK_SPEED, 1],
+    ],
+  },
 ];
 
-const BONUSES: Array<Pick<Tile, "title" | "description" | "move">> = [
-  { title: "Happy Hour", description: "Rush of orders! Skip ahead 1 space.", move: 1 },
-  { title: "Big Tipper", description: "Regular loves you — ahead 2 spaces.", move: 2 },
-  { title: "Perfect Pour", description: "Flawless round. Skip ahead 1 space.", move: 1 },
-];
-
-const CHALLENGES: Array<Pick<Tile, "title" | "description">> = [
-  { title: "Signature Spotlight", description: "Next sale must be the house signature cocktail." },
-  { title: "Upsell Gauntlet", description: "Land an upsell within your next 3 orders." },
-  { title: "Round Builder", description: "Sell a round of 4+ drinks in one order." },
-];
+// ---------- deterministic generation ----------
 
 function mulberry32(seed: number) {
   return () => {
@@ -33,103 +119,131 @@ function mulberry32(seed: number) {
   };
 }
 
-/**
- * Generate a board layout. Deterministic for a given (length, seed) so every
- * client of a game renders the identical board without shipping tile rows —
- * though in Supabase mode tiles are still persisted for auditability.
- */
-export function generateBoard(length = 30, seed = 1): Tile[] {
-  const rand = mulberry32(seed);
-  const pick = <T,>(arr: T[]) => arr[Math.floor(rand() * arr.length)];
+function weightedPick<T>(rand: () => number, pool: Array<[T, number]>): T {
+  const total = pool.reduce((a, [, w]) => a + w, 0);
+  let roll = rand() * total;
+  for (const [item, w] of pool) {
+    roll -= w;
+    if (roll <= 0) return item;
+  }
+  return pool[pool.length - 1][0];
+}
 
+function makeGoal(rand: () => number, tpl: GoalTemplate, scale = 1): TileGoal {
+  const [min, max] = tpl.range;
+  const target = Math.max(1, Math.round((min + rand() * (max - min)) * scale));
+  return { type: tpl.type, label: tpl.label(target), target };
+}
+
+/**
+ * Generate a campaign board: every tile gets a quest from the preset's pool.
+ * Rhythm: every 10th tile is a Boss Quest (double target, move 3), every 7th
+ * a Hard Quest (1.5x target, move 2); a few bonus/setback landing effects
+ * add board-game texture. Deterministic for a given (length, preset, seed);
+ * managers can still edit any tile before the campaign starts.
+ */
+export function generateCampaignBoard(length: number, presetKey: string, seed = 1): Tile[] {
+  const preset = CAMPAIGN_PRESETS.find((p) => p.key === presetKey) ?? CAMPAIGN_PRESETS[2];
+  const rand = mulberry32(seed);
   const tiles: Tile[] = [];
-  const midCheckpoint = Math.floor(length / 2);
 
   for (let i = 0; i < length; i++) {
+    const isFinish = i === length - 1;
+    const isBoss = !isFinish && i > 0 && i % 10 === 0;
+    const isHard = !isFinish && !isBoss && i > 0 && i % 7 === 0;
+    const tpl = weightedPick(rand, preset.pool);
+    const goal = makeGoal(rand, tpl, isFinish || isBoss ? 2 : isHard ? 1.5 : 1);
+
+    let type: TileType = "progress";
+    let title = `Day ${i + 1}`;
+    let move: number | undefined;
+
     if (i === 0) {
-      tiles.push({ position: i, type: "start", title: "Clock In" });
-    } else if (i === length - 1) {
-      tiles.push({
-        position: i,
-        type: "finish",
-        title: "Last Call — WIN",
-        description: "Manager must approve the win.",
-        requiresApproval: true,
-      });
-    } else if (i === midCheckpoint) {
-      tiles.push({
-        position: i,
-        type: "checkpoint",
-        title: "Stock Check",
-        description: "Manager spot-check before you continue.",
-        requiresApproval: true,
-      });
+      type = "start";
+      title = "Opening Night";
+    } else if (isFinish) {
+      type = "finish";
+      title = "Last Call — Boss";
+    } else if (isBoss) {
+      type = "challenge";
+      title = "Boss Quest";
+    } else if (isHard) {
+      type = "challenge";
+      title = "Hard Quest";
     } else {
       const roll = rand();
-      // Keep the first few tiles clean so games start with momentum.
-      if (i > 3 && roll < 0.15) {
-        tiles.push({ position: i, type: "setback", ...pick(SETBACKS) });
-      } else if (i > 2 && roll < 0.3) {
-        tiles.push({ position: i, type: "bonus", ...pick(BONUSES) });
-      } else if (roll < 0.42) {
-        tiles.push({ position: i, type: "challenge", ...pick(CHALLENGES) });
-      } else {
-        tiles.push({ position: i, type: "progress", title: "Behind the Bar" });
+      if (i > 3 && roll < 0.12) {
+        type = "setback";
+        title = "Rough Night";
+        move = rand() < 0.5 ? -1 : -2;
+      } else if (i > 2 && roll < 0.24) {
+        type = "bonus";
+        title = "Hot Streak";
+        move = rand() < 0.5 ? 1 : 2;
       }
     }
+
+    tiles.push({
+      position: i,
+      type,
+      title,
+      description:
+        move !== undefined
+          ? `Landing here ${move > 0 ? `skips you ahead ${move}` : `knocks you back ${-move}`}.`
+          : undefined,
+      move,
+      goal,
+      moveValue: isBoss ? 3 : isHard ? 2 : 1,
+    });
   }
   return tiles;
 }
 
+// ---------- movement ----------
+
 /**
- * Apply tally units to a player and walk them forward tile by tile,
- * resolving landing effects. Effects don't chain (a bonus that lands you on
- * a setback doesn't trigger it) — keeps rounds snappy and un-loopable.
+ * Apply an approved quest completion. Mirrored by _apply_quest_approval in
+ * SQL: completing the final tile's quest wins; otherwise advance by the
+ * tile's moveValue, then apply the landing tile's effect once (no chaining).
  */
-export function applyUnits(
+export function applyQuestApproval(
   game: Game,
   player: Player,
-  units: number,
 ): { player: Player; events: BoardEvent[] } {
   const events: BoardEvent[] = [];
-  const p: Player = { ...player, tally: { ...player.tally } };
-  if (p.finished || p.awaitingApproval) return { player: p, events };
+  const p: Player = { ...player, progress: 0, awaitingApproval: false };
 
-  p.progress += units;
-
-  while (p.progress >= game.actionsPerTile && !p.finished && !p.awaitingApproval) {
-    p.progress -= game.actionsPerTile;
-    p.position = Math.min(p.position + 1, game.boardLength - 1);
-    const tile = game.tiles[p.position];
-    events.push({
-      playerId: p.id,
-      kind: "advance",
-      message: `${p.name} advances to “${tile.title}”`,
-    });
-
-    if (tile.move) {
-      p.position = Math.max(0, Math.min(p.position + tile.move, game.boardLength - 1));
-      events.push({
-        playerId: p.id,
-        kind: tile.move > 0 ? "bonus" : "setback",
-        message: `${tile.title}: ${tile.description ?? ""} → tile ${p.position + 1}`,
-      });
-    }
-
-    const landed = game.tiles[p.position];
-    if (landed.requiresApproval) {
-      p.awaitingApproval = true;
-      events.push({
-        playerId: p.id,
-        kind: landed.type === "finish" ? "win" : "checkpoint",
-        message:
-          landed.type === "finish"
-            ? `${p.name} reached LAST CALL — awaiting manager approval! 🏆`
-            : `${p.name} hit “${landed.title}” — manager check required`,
-      });
-    }
+  if (p.position >= game.boardLength - 1) {
+    p.finished = true;
+    events.push({ playerId: p.id, kind: "win", message: `🏆 ${p.name} WINS the marathon!` });
+    return { player: p, events };
   }
 
+  const from = game.tiles[p.position];
+  p.position = Math.min(p.position + from.moveValue, game.boardLength - 1);
+  events.push({
+    playerId: p.id,
+    kind: "advance",
+    message: `${p.name} completes “${from.goal.label}” → ${from.moveValue > 1 ? `${from.moveValue} tiles to` : ""} “${game.tiles[p.position].title}”`,
+  });
+
+  const landed = game.tiles[p.position];
+  if (landed.move) {
+    p.position = Math.max(0, Math.min(p.position + landed.move, game.boardLength - 1));
+    events.push({
+      playerId: p.id,
+      kind: landed.move > 0 ? "bonus" : "setback",
+      message: `${landed.title}: ${landed.description ?? ""} → tile ${p.position + 1}`,
+    });
+  }
+
+  if (p.position >= game.boardLength - 1) {
+    events.push({
+      playerId: p.id,
+      kind: "checkpoint",
+      message: `${p.name} faces the final Boss Quest at Last Call!`,
+    });
+  }
   return { player: p, events };
 }
 
@@ -142,7 +256,7 @@ export function applyOverride(
 ): { player: Player; events: BoardEvent[] } {
   const p = { ...player };
   p.position = Math.max(0, Math.min(p.position + delta, game.boardLength - 1));
-  p.awaitingApproval = game.tiles[p.position].requiresApproval ?? false;
+  p.progress = 0;
   return {
     player: p,
     events: [
@@ -153,12 +267,4 @@ export function applyOverride(
       },
     ],
   };
-}
-
-/** Manager approves a player parked on a checkpoint/finish tile. */
-export function approvePlayer(game: Game, player: Player): { player: Player; won: boolean } {
-  const p = { ...player, awaitingApproval: false };
-  const won = game.tiles[p.position].type === "finish";
-  if (won) p.finished = true;
-  return { player: p, won };
 }

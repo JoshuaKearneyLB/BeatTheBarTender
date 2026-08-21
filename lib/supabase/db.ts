@@ -1,15 +1,15 @@
 // Row types, mappers, and data access for live (Supabase) mode. All game
 // state mutations go through the RPCs defined in
-// supabase/migrations/0002_engine_rpcs.sql — the database is the referee.
+// supabase/migrations/0003_campaign_quests.sql — the database is the referee.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { generateBoard } from "@/lib/board";
 import type {
-  ActionType,
   Game,
   GameStatus,
-  LoggedAction,
+  GoalType,
   Player,
+  QuestSubmission,
+  SubmissionStatus,
   Tile,
   TileType,
 } from "@/lib/types";
@@ -23,8 +23,8 @@ export interface GameRow {
   name: string;
   status: GameStatus;
   board_length: number;
-  actions_per_tile: number;
-  board_seed: number;
+  auto_approve: boolean;
+  campaign_preset: string | null;
   winner_player_id: string | null;
 }
 
@@ -34,7 +34,10 @@ export interface TileRow {
   title: string;
   description: string | null;
   move_delta: number;
-  requires_approval: boolean;
+  goal_type: GoalType;
+  goal_target: number;
+  goal_label: string;
+  move_value: number;
 }
 
 export interface PlayerRow {
@@ -49,15 +52,17 @@ export interface PlayerRow {
   finished: boolean;
 }
 
-export interface LogRow {
+export interface SubmissionRow {
   id: string;
   game_id: string;
   player_id: string;
-  action_type: ActionType;
-  units: number;
-  receipt_path: string | null;
-  voided: boolean;
-  created_at: string;
+  tile_position: number;
+  claimed_value: number;
+  note: string | null;
+  photo_path: string | null;
+  status: SubmissionStatus;
+  review_note: string | null;
+  submitted_at: string;
 }
 
 // ---------- mappers ----------
@@ -69,7 +74,8 @@ export function rowToTile(r: TileRow): Tile {
     title: r.title,
     description: r.description ?? undefined,
     move: r.move_delta !== 0 ? r.move_delta : undefined,
-    requiresApproval: r.requires_approval || undefined,
+    goal: { type: r.goal_type, label: r.goal_label, target: r.goal_target },
+    moveValue: r.move_value,
   };
 }
 
@@ -81,23 +87,22 @@ export function rowToPlayer(r: PlayerRow): Player {
     token: r.token_emoji,
     position: r.position,
     progress: r.progress,
-    // Per-action tallies live in action_logs; the live UI shows totals from
-    // the log feed instead of a per-player breakdown.
-    tally: { cocktail: 0, premium_draft: 0, upsell: 0 },
     awaitingApproval: r.awaiting_approval,
     finished: r.finished,
   };
 }
 
-export function rowToLog(r: LogRow): LoggedAction {
+export function rowToSubmission(r: SubmissionRow): QuestSubmission {
   return {
     id: r.id,
     playerId: r.player_id,
-    actionType: r.action_type,
-    units: r.units,
-    receiptPath: r.receipt_path ?? undefined,
-    createdAt: r.created_at,
-    voided: r.voided,
+    tilePosition: r.tile_position,
+    claimedValue: r.claimed_value,
+    note: r.note ?? undefined,
+    photoPath: r.photo_path ?? undefined,
+    status: r.status,
+    reviewNote: r.review_note ?? undefined,
+    submittedAt: r.submitted_at,
   };
 }
 
@@ -106,19 +111,19 @@ export function rowToLog(r: LogRow): LoggedAction {
 export async function fetchGame(
   supabase: SupabaseClient,
   gameId: string,
-): Promise<{ game: Game; log: LoggedAction[] }> {
-  const [gameRes, tilesRes, playersRes, logsRes] = await Promise.all([
+): Promise<{ game: Game; submissions: QuestSubmission[] }> {
+  const [gameRes, tilesRes, playersRes, subsRes] = await Promise.all([
     supabase.from("games").select("*").eq("id", gameId).single(),
     supabase.from("game_tiles").select("*").eq("game_id", gameId).order("position"),
     supabase.from("game_players").select("*").eq("game_id", gameId).order("joined_at"),
     supabase
-      .from("action_logs")
+      .from("quest_submissions")
       .select("*")
       .eq("game_id", gameId)
-      .order("created_at", { ascending: false })
-      .limit(50),
+      .order("submitted_at", { ascending: false })
+      .limit(200),
   ]);
-  const firstError = gameRes.error ?? tilesRes.error ?? playersRes.error ?? logsRes.error;
+  const firstError = gameRes.error ?? tilesRes.error ?? playersRes.error ?? subsRes.error;
   if (firstError) throw new Error(`Failed to load game: ${firstError.message}`);
 
   const row = gameRes.data as GameRow;
@@ -128,12 +133,13 @@ export async function fetchGame(
       name: row.name,
       status: row.status,
       boardLength: row.board_length,
-      actionsPerTile: row.actions_per_tile,
+      autoApprove: row.auto_approve,
+      campaignPreset: row.campaign_preset ?? undefined,
       tiles: (tilesRes.data as TileRow[]).map(rowToTile),
       players: (playersRes.data as PlayerRow[]).map(rowToPlayer),
       winnerId: row.winner_player_id ?? undefined,
     },
-    log: (logsRes.data as LogRow[]).map(rowToLog),
+    submissions: (subsRes.data as SubmissionRow[]).map(rowToSubmission),
   };
 }
 
@@ -145,23 +151,23 @@ async function rpc<T>(supabase: SupabaseClient, fn: string, args: Record<string,
   return data as T;
 }
 
-export async function createGameLive(opts: {
+export async function createCampaignLive(opts: {
   name: string;
   boardLength: number;
-  actionsPerTile: number;
+  preset: string;
+  autoApprove: boolean;
   pin: string;
+  tiles: Tile[];
 }): Promise<string> {
   const supabase = mustClient();
   await ensureSignedIn(supabase);
-  const seed = Math.floor(Math.random() * 2 ** 31);
-  const tiles = generateBoard(opts.boardLength, seed);
-  return rpc<string>(supabase, "create_game", {
+  return rpc<string>(supabase, "create_campaign", {
     p_name: opts.name,
     p_board_length: opts.boardLength,
-    p_actions_per_tile: opts.actionsPerTile,
-    p_seed: seed,
+    p_preset: opts.preset,
+    p_auto_approve: opts.autoApprove,
     p_pin: opts.pin,
-    p_tiles: tiles,
+    p_tiles: opts.tiles,
   });
 }
 
@@ -177,22 +183,41 @@ export const joinGame = (
     p_token_emoji: tokenEmoji,
   });
 
-export const logAction = (
-  supabase: SupabaseClient,
-  playerId: string,
-  actionType: ActionType,
-  units: number,
-  receiptPath?: string,
-) =>
-  rpc<PlayerRow>(supabase, "log_action", {
+export const updateProgress = (supabase: SupabaseClient, playerId: string, progress: number) =>
+  rpc<PlayerRow>(supabase, "update_progress", {
     p_player_id: playerId,
-    p_action_type: actionType,
-    p_units: units,
-    p_receipt_path: receiptPath ?? null,
+    p_progress: progress,
   });
 
-export const voidLastAction = (supabase: SupabaseClient, playerId: string) =>
-  rpc<PlayerRow>(supabase, "void_last_action", { p_player_id: playerId });
+export const submitQuest = (
+  supabase: SupabaseClient,
+  playerId: string,
+  claimedValue: number,
+  note?: string,
+  photoPath?: string,
+) =>
+  rpc<SubmissionRow>(supabase, "submit_quest", {
+    p_player_id: playerId,
+    p_claimed_value: claimedValue,
+    p_note: note ?? null,
+    p_photo_path: photoPath ?? null,
+  });
+
+export const reviewSubmissions = (
+  supabase: SupabaseClient,
+  gameId: string,
+  submissionIds: string[],
+  approve: boolean,
+  note: string | undefined,
+  pin: string,
+) =>
+  rpc<number>(supabase, "review_submissions", {
+    p_game_id: gameId,
+    p_submission_ids: submissionIds,
+    p_approve: approve,
+    p_note: note ?? null,
+    p_pin: pin || null,
+  });
 
 export const managerOverride = (
   supabase: SupabaseClient,
@@ -210,23 +235,11 @@ export const managerOverride = (
     p_pin: pin || null,
   });
 
-export const managerApprove = (
-  supabase: SupabaseClient,
-  gameId: string,
-  playerId: string,
-  pin: string,
-) =>
-  rpc<PlayerRow>(supabase, "manager_approve", {
-    p_game_id: gameId,
-    p_player_id: playerId,
-    p_pin: pin || null,
-  });
-
-// ---------- receipt storage ----------
+// ---------- photo storage (shift summary / till report) ----------
 
 const RECEIPTS_BUCKET = "receipts";
 
-/** Upload a receipt photo; returns the storage path for action_logs. */
+/** Upload a quest photo; returns the storage path for quest_submissions. */
 export async function uploadReceipt(
   supabase: SupabaseClient,
   gameId: string,
@@ -239,11 +252,11 @@ export async function uploadReceipt(
     contentType: file.type || "image/jpeg",
     upsert: false,
   });
-  if (error) throw new Error(`Receipt upload failed: ${error.message}`);
+  if (error) throw new Error(`Photo upload failed: ${error.message}`);
   return path;
 }
 
-/** Short-lived signed URL so managers can view a receipt from the private bucket. */
+/** Short-lived signed URL so managers can view a photo from the private bucket. */
 export async function signedReceiptUrl(
   supabase: SupabaseClient,
   path: string,
@@ -252,7 +265,7 @@ export async function signedReceiptUrl(
   const { data, error } = await supabase.storage
     .from(RECEIPTS_BUCKET)
     .createSignedUrl(path, expiresInSeconds);
-  if (error || !data) throw new Error(`Could not sign receipt URL: ${error?.message}`);
+  if (error || !data) throw new Error(`Could not sign photo URL: ${error?.message}`);
   return data.signedUrl;
 }
 

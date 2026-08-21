@@ -42,7 +42,14 @@ export default function BoardStrip({ game, meId }: { game: Game; meId?: string }
               className={`relative flex h-24 w-20 shrink-0 flex-col justify-between rounded-xl border bg-bar-800 p-1.5 ${style.ring}`}
             >
               <div className="flex items-center justify-between text-[10px] text-cream-400">
-                <span>{tile.position + 1}</span>
+                <span>
+                  {tile.position + 1}
+                  {tile.moveValue > 1 && (
+                    <span className="ml-1 rounded-sm bg-brass-500/20 px-0.5 text-brass-400">
+                      ×{tile.moveValue}
+                    </span>
+                  )}
+                </span>
                 {style.icon}
               </div>
               <p className="text-[10px] leading-tight text-cream-100">{tile.title}</p>

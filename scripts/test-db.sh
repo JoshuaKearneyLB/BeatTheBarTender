@@ -35,10 +35,9 @@ run "'$PGBIN/pg_ctl' -D '$DIR/data' -o '-k $DIR -p $PORT -c listen_addresses=' -
 
 PSQL=("$PGBIN/psql" -h "$DIR" -p "$PORT" -U postgres -v ON_ERROR_STOP=1 -q)
 "${PSQL[@]}" -c "create database baropoly_test"
-"${PSQL[@]}" -d baropoly_test \
-  -f supabase/tests/supabase-stub.sql \
-  -f supabase/migrations/0001_init.sql \
-  -f supabase/migrations/0002_engine_rpcs.sql 2>&1 | grep -v "wal_level\|^HINT" || true
+MIGRATION_ARGS=(-f supabase/tests/supabase-stub.sql)
+for m in supabase/migrations/*.sql; do MIGRATION_ARGS+=(-f "$m"); done
+"${PSQL[@]}" -d baropoly_test "${MIGRATION_ARGS[@]}" 2>&1 | grep -v "wal_level\|^HINT" || true
 "${PSQL[@]}" -d baropoly_test -f supabase/tests/rpc-test.sql 2>&1 | grep -E "PASS|FAIL|ERROR|ALL RPC"
 
 echo "db tests: OK"

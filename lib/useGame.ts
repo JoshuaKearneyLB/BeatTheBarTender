@@ -6,7 +6,7 @@
 //    optimistic local moves and Realtime reconciliation across devices.
 
 import { isDemoMode } from "./supabase/client";
-import type { ActionDef, BoardEvent, Game, LoggedAction, Player } from "./types";
+import type { BoardEvent, Game, Player, QuestSubmission } from "./types";
 import { useDemoGame } from "./useDemoGame";
 import { useLiveGame } from "./useLiveGame";
 
@@ -16,18 +16,21 @@ export interface GameApi {
   error: string | null;
   /** Null while connecting or on error (live mode). */
   game: Game | null;
-  log: LoggedAction[];
+  /** Quest submissions, newest first (the manager review queue + history). */
+  submissions: QuestSubmission[];
   events: BoardEvent[];
-  actions: ActionDef[];
   /** The player belonging to this device/session; null until joined (live). */
   me: Player | null;
   join: (name: string, token: string) => Promise<void>;
-  tally: (action: ActionDef, receipt?: File) => void;
-  undo: () => void;
+  /** Nudge my progress counter toward the current tile's goal (±delta). */
+  bumpProgress: (delta: number) => void;
+  /** Submit the current quest for verification, with an optional photo/note. */
+  submitQuest: (opts?: { photo?: File; note?: string }) => void;
+  /** Manager: batch approve/reject pending submissions (PIN in live mode). */
+  review: (submissionIds: string[], approve: boolean, pin?: string) => void;
   override: (playerId: string, delta: number, reason: string, pin?: string) => void;
-  approve: (playerId: string, pin?: string) => void;
-  /** Resolve a viewable URL for a log entry's receipt (signed URL in live mode). */
-  receiptUrl: (entry: LoggedAction) => Promise<string | null>;
+  /** Resolve a viewable URL for a submission's photo (signed URL in live mode). */
+  photoUrl: (submission: QuestSubmission) => Promise<string | null>;
 }
 
 export function useGame(gameId: string): GameApi {

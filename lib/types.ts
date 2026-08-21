@@ -1,4 +1,7 @@
-// Core domain types shared by the board engine, UI, and (later) Supabase rows.
+// Core domain types shared by the board engine, UI, and Supabase rows.
+// v0.3 "Monthly Marathon": movement is quest-based — every tile carries a
+// manager-configured goal, and completing it (with manager verification)
+// moves the player by the tile's move value.
 
 export type TileType =
   | "start"
@@ -9,32 +12,28 @@ export type TileType =
   | "checkpoint"
   | "finish";
 
+export type GoalType = "volume" | "upsell" | "task";
+
+export interface TileGoal {
+  type: GoalType;
+  /** What the bartender reads, e.g. "Sell 10 Espresso Martinis". */
+  label: string;
+  /** Numeric target; 1 for boolean tasks. */
+  target: number;
+}
+
 export interface Tile {
   position: number;
   type: TileType;
   title: string;
   description?: string;
-  /** Board-effect on landing: +n skip ahead, -n move back. */
+  /** Landing effect: +n skip ahead, -n move back (never chains). */
   move?: number;
-  /** Landing here parks the player until a manager approves (PIN / toggle). */
-  requiresApproval?: boolean;
+  /** The quest that must be completed (and verified) to leave this tile. */
+  goal: TileGoal;
+  /** Tiles moved forward when the quest is approved: 1 standard, 2-3 hard/boss. */
+  moveValue: number;
 }
-
-export type ActionType = "cocktail" | "premium_draft" | "upsell";
-
-export interface ActionDef {
-  type: ActionType;
-  label: string;
-  emoji: string;
-  /** Tally units one tap is worth (upsells can count extra). */
-  units: number;
-}
-
-export const DEFAULT_ACTIONS: ActionDef[] = [
-  { type: "cocktail", label: "Cocktail", emoji: "🍸", units: 1 },
-  { type: "premium_draft", label: "Premium Draft", emoji: "🍺", units: 1 },
-  { type: "upsell", label: "Upsell", emoji: "⭐", units: 2 },
-];
 
 export type GameStatus = "lobby" | "active" | "paused" | "finished";
 
@@ -44,24 +43,29 @@ export interface Player {
   profileId?: string;
   name: string;
   token: string; // emoji game piece
-  position: number; // tile index
-  progress: number; // tally units toward the next tile (0..actionsPerTile-1)
-  tally: Record<ActionType, number>;
+  position: number; // tile index = which quest is active
+  /** Self-reported progress toward the current tile's goal target. */
+  progress: number;
+  /** True while a quest submission is pending manager review. */
   awaitingApproval: boolean;
   finished: boolean;
 }
 
-export interface LoggedAction {
+export type SubmissionStatus = "pending" | "approved" | "rejected";
+
+export interface QuestSubmission {
   id: string;
   playerId: string;
-  actionType: ActionType;
-  units: number;
+  tilePosition: number;
+  claimedValue: number;
+  note?: string;
   /** Demo Mode: local object URL for the captured photo. */
-  receiptUrl?: string;
+  photoUrl?: string;
   /** Live mode: path in the private 'receipts' storage bucket. */
-  receiptPath?: string;
-  createdAt: string;
-  voided?: boolean;
+  photoPath?: string;
+  status: SubmissionStatus;
+  submittedAt: string;
+  reviewNote?: string;
 }
 
 export interface Game {
@@ -69,8 +73,9 @@ export interface Game {
   name: string;
   status: GameStatus;
   boardLength: number;
-  /** Tally units required to advance one tile. */
-  actionsPerTile: number;
+  /** Manager toggle: approve non-winning quests automatically on submit. */
+  autoApprove: boolean;
+  campaignPreset?: string;
   tiles: Tile[];
   players: Player[];
   winnerId?: string;

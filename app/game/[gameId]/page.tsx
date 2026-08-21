@@ -1,8 +1,8 @@
 "use client";
 
-// Bartender mobile view: live board on top, event ticker, speed-tally pad
-// pinned within thumb reach at the bottom. In live mode a join card appears
-// until this device has a player in the game.
+// Bartender mobile view: live board on top, event ticker, and the active
+// quest card pinned within thumb reach at the bottom. In live mode a join
+// card appears until this device has a player in the game.
 
 import { use } from "react";
 import Link from "next/link";
@@ -10,17 +10,17 @@ import { ArrowLeft, Loader2, WifiOff } from "lucide-react";
 import BoardStrip from "@/components/board/BoardStrip";
 import EventTicker from "@/components/board/EventTicker";
 import JoinCard from "@/components/bartender/JoinCard";
-import TallyPad from "@/components/bartender/TallyPad";
+import QuestCard from "@/components/bartender/QuestCard";
 import { useGame } from "@/lib/useGame";
 
 export default function GamePage({ params }: { params: Promise<{ gameId: string }> }) {
   const { gameId } = use(params);
-  const { mode, error, game, events, actions, me, join, tally, undo } = useGame(gameId);
+  const { mode, error, game, events, me, join, bumpProgress, submitQuest } = useGame(gameId);
 
   if (mode === "connecting") {
     return (
       <main className="flex min-h-dvh items-center justify-center gap-2 text-cream-400">
-        <Loader2 className="size-5 animate-spin" /> Connecting to the shift…
+        <Loader2 className="size-5 animate-spin" /> Connecting to the marathon…
       </main>
     );
   }
@@ -43,7 +43,7 @@ export default function GamePage({ params }: { params: Promise<{ gameId: string 
           <ArrowLeft className="size-4" /> {game.name}
         </Link>
         <span className="rounded-full border border-brass-500/50 px-2 py-0.5 text-xs text-brass-400">
-          {mode === "demo" ? "Demo Mode" : "Live"}
+          {mode === "demo" ? "Demo Mode" : game.autoApprove ? "Live · auto-trust" : "Live"}
         </span>
       </header>
 
@@ -57,7 +57,7 @@ export default function GamePage({ params }: { params: Promise<{ gameId: string 
 
       <div className="mt-auto pb-2">
         {me ? (
-          <TallyPad game={game} player={me} actions={actions} onTally={tally} onUndo={undo} />
+          <QuestCard game={game} player={me} onBumpProgress={bumpProgress} onSubmit={submitQuest} />
         ) : (
           <JoinCard gameName={game.name} onJoin={join} />
         )}

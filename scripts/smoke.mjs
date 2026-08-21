@@ -1,6 +1,7 @@
-// Browser smoke test of Demo Mode (mobile viewport). Exercises the full
-// bartender loop (tally → tile advance → undo), the manager console
-// (override), and the training mini-game. Run a production server first:
+// Browser smoke test of Demo Mode (mobile viewport). Exercises the quest
+// loop (progress → submit → pending), the manager console (batch approve
+// moves the seeded player), and the training mini-game. Run a production
+// server first:
 //   npm run build && npm start
 // Then: npm run test:e2e
 // Env: BASE_URL (default http://localhost:3000), CHROMIUM_BIN (browser path).
@@ -28,35 +29,32 @@ try {
   await page.waitForURL("**/game/demo");
   await page.waitForSelector("text=Demo Mode");
 
-  // Tally 4 cocktails → with 3 units/tile the token must advance a tile
-  const cocktailBtn = page.locator("button", { hasText: "+1 Cocktail" });
-  for (let i = 0; i < 4; i++) {
-    await cocktailBtn.click();
-    await page.waitForTimeout(150);
+  // Quest card shows the tile-1 goal with a progress stepper
+  await page.waitForSelector("text=Tile 1");
+  const plus = page.locator('[aria-label="Increase progress"]');
+  for (let i = 0; i < 3; i++) {
+    await plus.click();
+    await page.waitForTimeout(120);
   }
-  const shiftCount = await cocktailBtn.locator("span").nth(2).innerText();
-  if (!shiftCount.startsWith("4")) throw new Error(`expected 4 tallied, got "${shiftCount}"`);
-  const ticker = await page.locator("ul").first().innerText();
-  if (!/advances/.test(ticker)) throw new Error("no advance event in ticker");
+  const counter = await page.locator("p.text-3xl").innerText();
+  if (!counter.trim().startsWith("3")) throw new Error(`expected progress 3, got "${counter}"`);
   await page.screenshot({ path: "/tmp/baropoly-bartender.png" });
 
-  // Undo
-  await page.click("text=Undo");
-  await page.waitForTimeout(200);
-  const afterUndo = await cocktailBtn.locator("span").nth(2).innerText();
-  if (!afterUndo.startsWith("3")) throw new Error(`undo failed: "${afterUndo}"`);
+  // Submit → pending approval state
+  await page.click("text=Submit for verification");
+  await page.waitForSelector("text=Pending approval");
 
-  // Manager: setup → console → override
+  // Manager: campaign builder → console → batch approve the seeded queue
   await page.goto(BASE + "/manager");
-  await page.waitForSelector("text=Set up the shift");
-  await page.click("text=Start the game");
+  await page.waitForSelector("text=Build the campaign");
+  await page.waitForSelector("text=Cocktail Focus"); // presets rendered
+  await page.click("text=Launch the marathon");
   await page.waitForURL("**/manager/demo");
-  await page.waitForSelector("text=Audit feed");
-  await page.click('[aria-label="Advance You"]');
-  await page.waitForTimeout(300);
-  if ((await page.locator("text=Manager advanced").count()) < 1) {
-    throw new Error("override event did not appear");
-  }
+  await page.waitForSelector("text=Approval queue");
+  await page.waitForSelector("text=claims"); // Marco's seeded submission
+  await page.click("text=Approve 1");
+  await page.waitForSelector("text=Marco completes");
+  await page.waitForSelector("text=approved"); // history row
   await page.screenshot({ path: "/tmp/baropoly-manager.png" });
 
   // Training mini-game still served

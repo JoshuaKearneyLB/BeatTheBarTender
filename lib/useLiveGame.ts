@@ -1,33 +1,32 @@
 "use client";
 
 // Live engine: Supabase Auth (anonymous) + server-authoritative RPCs.
-// Moves are applied optimistically with the same pure board engine the
-// server runs, then reconciled against the authoritative row the RPC
-// returns; Realtime delivers every other device's changes as row patches.
+// Progress bumps and quest submissions are applied optimistically with the
+// same pure board engine the server runs, then reconciled against the
+// authoritative rows the RPCs return; Realtime delivers every other
+// device's changes as row patches.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { applyUnits } from "./board";
 import { ensureSignedIn } from "./supabase/auth";
 import { getSupabaseBrowser } from "./supabase/client";
 import {
   fetchGame,
   joinGame,
-  logAction,
-  managerApprove,
   managerOverride,
-  rowToLog,
+  reviewSubmissions,
   rowToPlayer,
+  rowToSubmission,
   signedReceiptUrl,
+  submitQuest as rpcSubmitQuest,
+  updateProgress,
   uploadReceipt,
-  voidLastAction,
   type GameRow,
-  type LogRow,
   type PlayerRow,
+  type SubmissionRow,
 } from "./supabase/db";
 import { subscribeToGame, type GameChange } from "./supabase/realtime";
-import type { ActionDef, BoardEvent, Game, LoggedAction, Player } from "./types";
-import { DEFAULT_ACTIONS } from "./types";
+import type { BoardEvent, Game, Player, QuestSubmission } from "./types";
 import type { GameApi } from "./useGame";
 
 interface LiveState {
@@ -35,7 +34,7 @@ interface LiveState {
   error: string | null;
   userId: string | null;
   game: Game | null;
-  log: LoggedAction[];
+  submissions: QuestSubmission[];
   events: BoardEvent[];
 }
 
@@ -44,7 +43,7 @@ const INITIAL: LiveState = {
   error: null,
   userId: null,
   game: null,
-  log: [],
+  submissions: [],
   events: [],
 };
 
@@ -56,7 +55,7 @@ function pushEvents(events: BoardEvent[], incoming: BoardEvent[]): BoardEvent[] 
 function diffPlayerEvents(prev: Player | undefined, next: Player, game: Game): BoardEvent[] {
   const events: BoardEvent[] = [];
   if (!prev) {
-    events.push({ playerId: next.id, kind: "join", message: `${next.name} joined the shift` });
+    events.push({ playerId: next.id, kind: "join", message: `${next.name} joined the marathon` });
     return events;
   }
   if (next.position !== prev.position) {
@@ -71,18 +70,14 @@ function diffPlayerEvents(prev: Player | undefined, next: Player, game: Game): B
     });
   }
   if (next.awaitingApproval && !prev.awaitingApproval) {
-    const tile = game.tiles[next.position];
     events.push({
       playerId: next.id,
-      kind: tile?.type === "finish" ? "win" : "checkpoint",
-      message:
-        tile?.type === "finish"
-          ? `${next.name} reached LAST CALL — awaiting manager approval! 🏆`
-          : `${next.name} hit “${tile?.title}” — manager check required`,
+      kind: "checkpoint",
+      message: `${next.name} submitted a quest for review`,
     });
   }
   if (next.finished && !prev.finished) {
-    events.push({ playerId: next.id, kind: "win", message: `🏆 ${next.name} WINS the shift!` });
+    events.push({ playerId: next.id, kind: "win", message: `🏆 ${next.name} WINS the marathon!` });
   }
   return events;
 }
@@ -103,7 +98,7 @@ function patchPlayer(state: LiveState, row: PlayerRow): LiveState {
     return state; // echo of a change we already applied optimistically
   }
   const players = prev
-    ? state.game.players.with(idx, { ...next, tally: prev.tally })
+    ? state.game.players.with(idx, next)
     : [...state.game.players, next];
   return {
     ...state,
@@ -112,13 +107,15 @@ function patchPlayer(state: LiveState, row: PlayerRow): LiveState {
   };
 }
 
-function patchLog(state: LiveState, row: LogRow, eventType: "INSERT" | "UPDATE"): LiveState {
-  const entry = rowToLog(row);
-  if (eventType === "INSERT") {
-    if (state.log.some((l) => l.id === entry.id)) return state;
-    return { ...state, log: [entry, ...state.log].slice(0, 500) };
-  }
-  return { ...state, log: state.log.map((l) => (l.id === entry.id ? entry : l)) };
+function patchSubmission(state: LiveState, row: SubmissionRow): LiveState {
+  const entry = rowToSubmission(row);
+  const existing = state.submissions.find((s) => s.id === entry.id);
+  return {
+    ...state,
+    submissions: existing
+      ? state.submissions.map((s) => (s.id === entry.id ? entry : s))
+      : [entry, ...state.submissions].slice(0, 200),
+  };
 }
 
 function patchGame(state: LiveState, row: GameRow): LiveState {
@@ -128,6 +125,7 @@ function patchGame(state: LiveState, row: GameRow): LiveState {
     game: {
       ...state.game,
       status: row.status,
+      autoApprove: row.auto_approve,
       winnerId: row.winner_player_id ?? undefined,
     },
   };
@@ -150,8 +148,8 @@ export function useLiveGame(gameId: string, enabled: boolean): GameApi {
     const supabase = supabaseRef.current;
     if (!supabase) return;
     try {
-      const { game, log } = await fetchGame(supabase, gameId);
-      setState((s) => ({ ...s, game, log }));
+      const { game, submissions } = await fetchGame(supabase, gameId);
+      setState((s) => ({ ...s, game, submissions }));
     } catch {
       // transient; the next realtime change or user action retries
     }
@@ -167,19 +165,17 @@ export function useLiveGame(gameId: string, enabled: boolean): GameApi {
       if (!supabase) throw new Error("Supabase is not configured");
       supabaseRef.current = supabase;
       const userId = await ensureSignedIn(supabase);
-      const { game, log } = await fetchGame(supabase, gameId);
+      const { game, submissions } = await fetchGame(supabase, gameId);
       if (cancelled) return;
-      setState({ status: "live", error: null, userId, game, log, events: [] });
+      setState({ status: "live", error: null, userId, game, submissions, events: [] });
       unsubscribe = subscribeToGame(supabase, gameId, (change: GameChange) => {
         if (!change.new) return;
         setState((s) => {
           switch (change.table) {
             case "game_players":
               return patchPlayer(s, change.new as unknown as PlayerRow);
-            case "action_logs":
-              return change.eventType === "DELETE"
-                ? s
-                : patchLog(s, change.new as unknown as LogRow, change.eventType);
+            case "quest_submissions":
+              return patchSubmission(s, change.new as unknown as SubmissionRow);
             case "games":
               return patchGame(s, change.new as unknown as GameRow);
           }
@@ -195,29 +191,11 @@ export function useLiveGame(gameId: string, enabled: boolean): GameApi {
     };
   }, [gameId, enabled]);
 
-  // Live tallies per player are derived from the log feed.
-  const game = useMemo(() => {
-    if (!state.game) return null;
-    const counts = new Map<string, Player["tally"]>();
-    for (const l of state.log) {
-      if (l.voided) continue;
-      const t = counts.get(l.playerId) ?? { cocktail: 0, premium_draft: 0, upsell: 0 };
-      t[l.actionType] += 1;
-      counts.set(l.playerId, t);
-    }
-    return {
-      ...state.game,
-      players: state.game.players.map((p) => ({
-        ...p,
-        tally: counts.get(p.id) ?? p.tally,
-      })),
-    };
-  }, [state.game, state.log]);
+  const findMe = useCallback((s: LiveState) => {
+    return s.game?.players.find((p) => p.profileId === s.userId) ?? null;
+  }, []);
 
-  const me = useMemo(
-    () => game?.players.find((p) => p.profileId === state.userId) ?? null,
-    [game, state.userId],
-  );
+  const me = findMe(state);
 
   const join = useCallback(
     async (name: string, token: string) => {
@@ -234,102 +212,123 @@ export function useLiveGame(gameId: string, enabled: boolean): GameApi {
     [gameId, warn],
   );
 
-  const tally = useCallback(
-    (action: ActionDef, receipt?: File) => {
+  const bumpProgress = useCallback(
+    (delta: number) => {
       const supabase = supabaseRef.current;
       const s = stateRef.current;
-      const current = s.game?.players.find((p) => p.profileId === s.userId);
-      if (!supabase || !s.game || !current) return;
+      const current = findMe(s);
+      if (!supabase || !s.game || !current || current.awaitingApproval || current.finished) return;
+      const target = s.game.tiles[current.position]?.goal.target ?? 1;
+      const progress = Math.max(0, Math.min(current.progress + delta, Math.max(target * 3, 99)));
+      if (progress === current.progress) return;
 
-      // Optimistic: run the same engine the server runs.
-      const { player: optimistic, events } = applyUnits(s.game, current, action.units);
+      // Optimistic; the returned row reconciles, realtime informs others.
+      setState((prev) =>
+        prev.game
+          ? { ...prev, game: { ...prev.game, players: prev.game.players.map((p) => (p.id === current.id ? { ...p, progress } : p)) } }
+          : prev,
+      );
+      updateProgress(supabase, current.id, progress)
+        .then((row) => setState((prev) => patchPlayer(prev, row)))
+        .catch((err: Error) => {
+          warn(`Progress sync failed: ${err.message}`);
+          void resync();
+        });
+    },
+    [findMe, resync, warn],
+  );
+
+  const submitQuest = useCallback(
+    (opts?: { photo?: File; note?: string }) => {
+      const supabase = supabaseRef.current;
+      const s = stateRef.current;
+      const current = findMe(s);
+      if (!supabase || !s.game || !current || current.awaitingApproval || current.finished) return;
+
+      // Optimistic lock; if auto-trust applies, the realtime patches move us.
       setState((prev) =>
         prev.game
           ? {
               ...prev,
               game: {
                 ...prev.game,
-                players: prev.game.players.map((p) => (p.id === optimistic.id ? optimistic : p)),
+                players: prev.game.players.map((p) =>
+                  p.id === current.id ? { ...p, awaitingApproval: true } : p,
+                ),
               },
-              events: pushEvents(prev.events, events),
+              events: pushEvents(prev.events, [
+                {
+                  playerId: current.id,
+                  kind: "checkpoint",
+                  message: `${current.name} submitted “${s.game!.tiles[current.position].goal.label}” for review`,
+                },
+              ]),
             }
           : prev,
       );
 
       (async () => {
-        const path = receipt
-          ? await uploadReceipt(supabase, s.game!.id, current.id, receipt)
+        const path = opts?.photo
+          ? await uploadReceipt(supabase, s.game!.id, current.id, opts.photo)
           : undefined;
-        const row = await logAction(supabase, current.id, action.type, action.units, path);
-        setState((prev) => patchPlayer(prev, row));
+        const row = await rpcSubmitQuest(supabase, current.id, current.progress, opts?.note, path);
+        setState((prev) => patchSubmission(prev, row));
+        void resync(); // auto-trust may have moved the player already
       })().catch((err: Error) => {
-        warn(`Tally failed: ${err.message}`);
+        warn(`Submission failed: ${err.message}`);
         void resync();
       });
     },
-    [resync, warn],
+    [findMe, resync, warn],
   );
 
-  const undo = useCallback(() => {
-    const supabase = supabaseRef.current;
-    const s = stateRef.current;
-    const current = s.game?.players.find((p) => p.profileId === s.userId);
-    if (!supabase || !current) return;
-    voidLastAction(supabase, current.id)
-      .then((row) => {
-        setState((prev) => patchPlayer(prev, row));
-        void resync(); // pick up the voided log row even if realtime lags
-      })
-      .catch((err: Error) => warn(`Undo failed: ${err.message}`));
-  }, [resync, warn]);
+  const review = useCallback(
+    (submissionIds: string[], approve: boolean, pin?: string) => {
+      const supabase = supabaseRef.current;
+      if (!supabase || submissionIds.length === 0) return;
+      reviewSubmissions(supabase, gameId, submissionIds, approve, undefined, pin ?? "")
+        .then(() => resync())
+        .catch((err: Error) => warn(`Review failed: ${err.message}`));
+    },
+    [gameId, resync, warn],
+  );
 
   const override = useCallback(
     (playerId: string, delta: number, reason: string, pin?: string) => {
       const supabase = supabaseRef.current;
       if (!supabase) return;
       managerOverride(supabase, gameId, playerId, delta, reason, pin ?? "")
-        .then((row) => setState((prev) => patchPlayer(prev, row)))
+        .then((row) => {
+          setState((prev) => patchPlayer(prev, row));
+          void resync(); // superseded submissions changed too
+        })
         .catch((err: Error) => warn(`Override failed: ${err.message}`));
     },
-    [gameId, warn],
+    [gameId, resync, warn],
   );
 
-  const approve = useCallback(
-    (playerId: string, pin?: string) => {
-      const supabase = supabaseRef.current;
-      if (!supabase) return;
-      managerApprove(supabase, gameId, playerId, pin ?? "")
-        .then((row) => setState((prev) => patchPlayer(prev, row)))
-        .catch((err: Error) => warn(`Approval failed: ${err.message}`));
-    },
-    [gameId, warn],
-  );
-
-  const receiptUrl = useCallback(async (entry: LoggedAction) => {
+  const photoUrl = useCallback(async (sub: QuestSubmission) => {
     const supabase = supabaseRef.current;
-    if (!supabase || !entry.receiptPath) return entry.receiptUrl ?? null;
+    if (!supabase || !sub.photoPath) return sub.photoUrl ?? null;
     try {
-      return await signedReceiptUrl(supabase, entry.receiptPath);
+      return await signedReceiptUrl(supabase, sub.photoPath);
     } catch {
       return null;
     }
   }, []);
 
-  const actions = useMemo(() => DEFAULT_ACTIONS, []);
-
   return {
     mode: state.status === "live" ? "live" : state.status,
     error: state.error,
-    game,
-    log: state.log,
+    game: state.game,
+    submissions: state.submissions,
     events: state.events,
-    actions,
     me,
     join,
-    tally,
-    undo,
+    bumpProgress,
+    submitQuest,
+    review,
     override,
-    approve,
-    receiptUrl,
+    photoUrl,
   };
 }
