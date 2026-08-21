@@ -1,0 +1,223 @@
+/**
+ * Cocktail dataset for Beat the Bartender.
+ * Ingredients are ordered roughly by how "revealing" they are —
+ * the giveaway ingredient comes last so early clues stay ambiguous.
+ */
+const COCKTAILS = [
+  {
+    name: "Margarita",
+    ingredients: ["Lime juice", "Orange liqueur", "Salt rim", "Tequila"],
+    garnish: "Lime wheel",
+    glass: "Coupe or rocks glass",
+  },
+  {
+    name: "Old Fashioned",
+    ingredients: ["Sugar cube", "Angostura bitters", "Orange peel", "Bourbon"],
+    garnish: "Orange twist",
+    glass: "Rocks glass",
+  },
+  {
+    name: "Mojito",
+    ingredients: ["Lime juice", "Sugar", "Soda water", "Mint leaves", "White rum"],
+    garnish: "Mint sprig",
+    glass: "Highball glass",
+  },
+  {
+    name: "Negroni",
+    ingredients: ["Sweet vermouth", "Orange peel", "Campari", "Gin"],
+    garnish: "Orange twist",
+    glass: "Rocks glass",
+  },
+  {
+    name: "Daiquiri",
+    ingredients: ["Lime juice", "Simple syrup", "White rum"],
+    garnish: "Lime wheel",
+    glass: "Coupe",
+  },
+  {
+    name: "Manhattan",
+    ingredients: ["Angostura bitters", "Sweet vermouth", "Maraschino cherry", "Rye whiskey"],
+    garnish: "Brandied cherry",
+    glass: "Coupe",
+  },
+  {
+    name: "Martini",
+    ingredients: ["Dry vermouth", "Olive or lemon twist", "Gin"],
+    garnish: "Olive",
+    glass: "Martini glass",
+  },
+  {
+    name: "Whiskey Sour",
+    ingredients: ["Lemon juice", "Simple syrup", "Egg white", "Bourbon"],
+    garnish: "Lemon wedge and cherry",
+    glass: "Rocks glass",
+  },
+  {
+    name: "Moscow Mule",
+    ingredients: ["Lime juice", "Ginger beer", "Copper mug", "Vodka"],
+    garnish: "Lime wedge",
+    glass: "Copper mug",
+  },
+  {
+    name: "Espresso Martini",
+    ingredients: ["Simple syrup", "Coffee liqueur", "Fresh espresso", "Vodka"],
+    garnish: "Three coffee beans",
+    glass: "Martini glass",
+  },
+  {
+    name: "Piña Colada",
+    ingredients: ["Pineapple juice", "Coconut cream", "White rum"],
+    garnish: "Pineapple wedge",
+    glass: "Hurricane glass",
+  },
+  {
+    name: "Aperol Spritz",
+    ingredients: ["Soda water", "Prosecco", "Aperol"],
+    garnish: "Orange slice",
+    glass: "Wine glass",
+  },
+  {
+    name: "Cosmopolitan",
+    ingredients: ["Lime juice", "Orange liqueur", "Cranberry juice", "Citrus vodka"],
+    garnish: "Lime wheel",
+    glass: "Martini glass",
+  },
+  {
+    name: "Mai Tai",
+    ingredients: ["Lime juice", "Orange curaçao", "Orgeat syrup", "Aged rum"],
+    garnish: "Mint sprig and lime",
+    glass: "Rocks glass",
+  },
+  {
+    name: "Gimlet",
+    ingredients: ["Lime juice", "Simple syrup", "Gin"],
+    garnish: "Lime wheel",
+    glass: "Coupe",
+  },
+  {
+    name: "Dark 'n' Stormy",
+    ingredients: ["Lime wedge", "Ginger beer", "Dark rum"],
+    garnish: "Lime wedge",
+    glass: "Highball glass",
+  },
+  {
+    name: "Paloma",
+    ingredients: ["Lime juice", "Salt rim", "Grapefruit soda", "Tequila"],
+    garnish: "Grapefruit wedge",
+    glass: "Highball glass",
+  },
+  {
+    name: "Tom Collins",
+    ingredients: ["Lemon juice", "Simple syrup", "Soda water", "Gin"],
+    garnish: "Lemon wheel and cherry",
+    glass: "Collins glass",
+  },
+  {
+    name: "Sazerac",
+    ingredients: ["Sugar cube", "Peychaud's bitters", "Absinthe rinse", "Rye whiskey"],
+    garnish: "Lemon twist",
+    glass: "Rocks glass",
+  },
+  {
+    name: "French 75",
+    ingredients: ["Lemon juice", "Simple syrup", "Champagne", "Gin"],
+    garnish: "Lemon twist",
+    glass: "Flute",
+  },
+  {
+    name: "Bloody Mary",
+    ingredients: ["Lemon juice", "Worcestershire sauce", "Tomato juice", "Vodka"],
+    garnish: "Celery stalk",
+    glass: "Highball glass",
+  },
+  {
+    name: "Bellini",
+    ingredients: ["White peach purée", "Prosecco"],
+    garnish: "Peach slice",
+    glass: "Flute",
+  },
+  {
+    name: "Amaretto Sour",
+    ingredients: ["Lemon juice", "Simple syrup", "Egg white", "Amaretto"],
+    garnish: "Lemon twist and cherry",
+    glass: "Rocks glass",
+  },
+  {
+    name: "Caipirinha",
+    ingredients: ["Lime wedges", "Sugar", "Cachaça"],
+    garnish: "Lime wheel",
+    glass: "Rocks glass",
+  },
+  {
+    name: "Long Island Iced Tea",
+    ingredients: ["Lemon juice", "Triple sec", "Cola", "Vodka, gin, rum, and tequila"],
+    garnish: "Lemon wedge",
+    glass: "Highball glass",
+  },
+  {
+    name: "Mint Julep",
+    ingredients: ["Sugar", "Crushed ice", "Mint leaves", "Bourbon"],
+    garnish: "Mint bouquet",
+    glass: "Julep tin",
+  },
+  {
+    name: "Penicillin",
+    ingredients: ["Lemon juice", "Honey-ginger syrup", "Islay scotch float", "Blended scotch"],
+    garnish: "Candied ginger",
+    glass: "Rocks glass",
+  },
+  {
+    name: "Paper Plane",
+    ingredients: ["Lemon juice", "Aperol", "Amaro Nonino", "Bourbon"],
+    garnish: "None",
+    glass: "Coupe",
+  },
+  {
+    name: "Last Word",
+    ingredients: ["Lime juice", "Maraschino liqueur", "Green Chartreuse", "Gin"],
+    garnish: "Brandied cherry",
+    glass: "Coupe",
+  },
+  {
+    name: "Corpse Reviver No. 2",
+    ingredients: ["Lemon juice", "Orange liqueur", "Lillet Blanc", "Absinthe rinse", "Gin"],
+    garnish: "Orange twist",
+    glass: "Coupe",
+  },
+  {
+    name: "Sidecar",
+    ingredients: ["Lemon juice", "Sugar rim", "Orange liqueur", "Cognac"],
+    garnish: "Orange twist",
+    glass: "Coupe",
+  },
+  {
+    name: "Boulevardier",
+    ingredients: ["Sweet vermouth", "Campari", "Bourbon"],
+    garnish: "Orange twist",
+    glass: "Rocks glass",
+  },
+  {
+    name: "Clover Club",
+    ingredients: ["Lemon juice", "Raspberry syrup", "Egg white", "Gin"],
+    garnish: "Skewered raspberries",
+    glass: "Coupe",
+  },
+  {
+    name: "Whiskey Highball",
+    ingredients: ["Soda water", "Lemon twist", "Japanese whisky"],
+    garnish: "Lemon twist",
+    glass: "Highball glass",
+  },
+  {
+    name: "Gin Basil Smash",
+    ingredients: ["Lemon juice", "Simple syrup", "Fresh basil", "Gin"],
+    garnish: "Basil leaf",
+    glass: "Rocks glass",
+  },
+  {
+    name: "Irish Coffee",
+    ingredients: ["Brown sugar", "Hot coffee", "Whipped cream", "Irish whiskey"],
+    garnish: "Cream float",
+    glass: "Toddy glass",
+  },
+];

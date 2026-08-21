@@ -1,0 +1,394 @@
+/* Beat the Bartender — speakeasy-dark theme */
+
+:root {
+  --bg: #14100d;
+  --bg-panel: #1e1813;
+  --bg-raised: #2a221a;
+  --line: #3b3025;
+  --text: #f3e9da;
+  --text-dim: #b3a48f;
+  --brass: #d9a441;
+  --brass-bright: #f0c268;
+  --green: #7fbf7f;
+  --red: #e07a6a;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #2a2015 0%, transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font-family: Georgia, "Times New Roman", serif;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+main {
+  width: 100%;
+  max-width: 680px;
+}
+
+.screen {
+  display: none;
+}
+
+.screen.active {
+  display: block;
+  animation: fade-in 0.35s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ---------- start screen ---------- */
+
+.masthead {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.masthead h1 {
+  font-size: clamp(2.2rem, 6vw, 3.4rem);
+  letter-spacing: 0.04em;
+  color: var(--brass-bright);
+  text-shadow: 0 2px 14px rgba(217, 164, 65, 0.25);
+}
+
+.masthead .tagline {
+  color: var(--text-dim);
+  font-style: italic;
+  margin-top: 0.5rem;
+}
+
+.rules {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.rules h2 {
+  color: var(--brass);
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.75rem;
+}
+
+.rules ol {
+  padding-left: 1.25rem;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+#difficulty-picker {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.difficulty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: left;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+}
+
+.difficulty:hover {
+  border-color: var(--brass);
+  transform: translateY(-2px);
+}
+
+.d-label {
+  font-size: 1.15rem;
+  color: var(--brass-bright);
+}
+
+.d-blurb {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+/* ---------- game screen ---------- */
+
+.scoreboard {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.scoreboard .score {
+  font-size: 1.4rem;
+  color: var(--brass-bright);
+}
+
+.scoreboard .who {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  display: block;
+}
+
+#round-label {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+#streak {
+  min-width: 3ch;
+}
+
+#house-status {
+  text-align: center;
+  color: var(--text-dim);
+  font-style: italic;
+  margin-bottom: 1rem;
+  transition: color 0.2s;
+}
+
+#house-status.locked {
+  color: var(--red);
+}
+
+.clue-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.clue-card h2 {
+  color: var(--brass);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.75rem;
+}
+
+#clues {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.clue {
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  font-size: 0.95rem;
+  border: 1px solid var(--line);
+}
+
+.clue.hidden-clue {
+  color: var(--text-dim);
+  background: transparent;
+  letter-spacing: 0.15em;
+}
+
+.clue.revealed {
+  color: var(--bg);
+  background: var(--brass);
+  border-color: var(--brass);
+  animation: pour-in 0.3s ease;
+}
+
+@keyframes pour-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: none; }
+}
+
+#options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  #options {
+    grid-template-columns: 1fr;
+  }
+}
+
+.option {
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.option:hover:not(:disabled) {
+  border-color: var(--brass);
+}
+
+.option:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.option.correct {
+  border-color: var(--green);
+  color: var(--green);
+  opacity: 1;
+}
+
+.option.wrong {
+  border-color: var(--red);
+  color: var(--red);
+  opacity: 1;
+}
+
+#round-result {
+  margin-top: 1.25rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  line-height: 1.6;
+}
+
+#round-result .house-line {
+  color: var(--text-dim);
+}
+
+#round-result .serve-note {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.btn-primary {
+  display: block;
+  margin: 1.25rem auto 0;
+  background: var(--brass);
+  color: var(--bg);
+  border: none;
+  border-radius: 999px;
+  padding: 0.8rem 2.2rem;
+  font-family: inherit;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.btn-primary:hover {
+  background: var(--brass-bright);
+  transform: translateY(-1px);
+}
+
+/* ---------- end screen ---------- */
+
+#screen-end {
+  text-align: center;
+}
+
+#final-title {
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  color: var(--brass-bright);
+  margin-bottom: 1.5rem;
+}
+
+.final-scores {
+  display: flex;
+  justify-content: center;
+  gap: 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.final-scores .big {
+  font-size: 2.4rem;
+  color: var(--text);
+}
+
+.final-scores .who {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.final-meta {
+  color: var(--text-dim);
+  font-style: italic;
+  margin-bottom: 1.5rem;
+}
+
+#final-rounds {
+  list-style: none;
+  text-align: left;
+  max-width: 420px;
+  margin: 0 auto 1rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#final-rounds li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.95rem;
+}
+
+#final-rounds li:last-child {
+  border-bottom: none;
+}
+
+#final-rounds .round-no {
+  color: var(--text-dim);
+  width: 1.5ch;
+}
+
+#final-rounds .round-name {
+  flex: 1;
+}
+
+#final-rounds li.won .round-pts {
+  color: var(--green);
+}
+
+#final-rounds li.lost .round-pts {
+  color: var(--red);
+}
