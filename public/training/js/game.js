@@ -29,7 +29,7 @@ const DIFFICULTIES = {
     name: "Rusty",
   },
   mixologist: {
-    label: "The tattooed one",
+    label: "The mixologist",
     blurb: "hand-carves the ice. insufferable. correct.",
     accuracy: 0.92,
     lockIn: [1, 3],
