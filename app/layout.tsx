@@ -1,6 +1,19 @@
 import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
 import RegisterSW from "@/components/RegisterSW";
+
+// Committed woff2 files — builds never touch the network for type.
+const display = localFont({
+  src: "../public/fonts/BebasNeue-Regular.woff2",
+  variable: "--font-display",
+  display: "swap",
+});
+const chalk = localFont({
+  src: "../public/fonts/Caveat-Bold.woff2",
+  variable: "--font-chalk",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Baropoly",
@@ -20,7 +33,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-dvh">
+      <body className={`${display.variable} ${chalk.variable} min-h-dvh`}>
         <RegisterSW />
         {children}
       </body>

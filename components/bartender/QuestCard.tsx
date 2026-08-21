@@ -1,13 +1,13 @@
 "use client";
 
-// The bartender's till pad: today's shift goal printed like a kitchen
-// ticket, a mechanical counter you punch like a door-clicker (haptics +
-// register click), one till photo, and send-for-sign-off. No soft progress
-// bars — big honest numbers and pips.
+// The bartender's surface: tonight's goal printed on a thermal receipt
+// (torn edge and all), with physical till keys underneath — clicker punch
+// for the count, one till photo, send for sign-off. Register-click audio
+// and haptics on every punch.
 
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Camera, CheckCircle2, Hourglass, Minus, Plus, Send, Trophy } from "lucide-react";
+import { Camera, Minus, Plus, Send } from "lucide-react";
 import type { Game, Player } from "@/lib/types";
 
 interface QuestCardProps {
@@ -68,55 +68,102 @@ export default function QuestCard({ game, player, onBumpProgress, onSubmit }: Qu
 
   if (player.finished) {
     return (
-      <section className="slab rounded-lg border-2 border-brass-400 bg-bar-800 p-6 text-center">
-        <Trophy className="mx-auto size-10 text-brass-400" />
-        <h2 className="ticket mt-3 text-xl font-black text-brass-400">Last call. You won.</h2>
-        <p className="mt-1 text-sm text-cream-400">The board&apos;s yours. So&apos;s the bragging.</p>
+      <section className="receipt receipt-edge px-5 pb-6 pt-5 text-center">
+        <p className="ticket text-[10px] text-ink-900/60">★ final receipt ★</p>
+        <span className="stamp mt-3 text-2xl text-mint-400 [color:#177a3e]">Paid in full</span>
+        <h2 className="display mt-3 text-4xl leading-none text-ink-900">Last call. You won.</h2>
+        <p className="chalk mt-1 text-xl text-ink-900/70">the board&apos;s yours. so&apos;s the bragging.</p>
       </section>
     );
   }
 
   if (player.awaitingApproval) {
     return (
-      <section className="slab rounded-lg border-2 border-bar-600 bg-bar-800 p-6 text-center">
-        <Hourglass className="mx-auto size-8 animate-pulse text-brass-400" />
-        <h2 className="ticket mt-3 font-black text-brass-400">Waiting on manager sign-off</h2>
-        <p className="mt-2 text-sm text-cream-400">
-          “{goal.label}” is on the manager&apos;s spike. You move the second they sign it.
+      <section className="receipt receipt-edge px-5 pb-6 pt-5 text-center">
+        <p className="ticket text-[10px] text-ink-900/60">★ order of the day ★</p>
+        <span className="stamp mt-3 text-xl [color:#a3540e]">On the spike</span>
+        <h2 className="display mt-3 text-2xl leading-none text-ink-900">
+          Waiting on manager sign-off
+        </h2>
+        <p className="chalk mt-2 text-xl leading-tight text-ink-900/70">
+          “{goal.label}” — you move the second they sign it
         </p>
       </section>
     );
   }
 
   return (
-    <section className="slab space-y-3 rounded-lg border-2 border-bar-600 bg-bar-800 p-4">
-      {/* the ticket: today's goal */}
-      <div className="border-b-2 border-dashed border-bar-600 pb-3">
-        <p className="ticket text-[11px] text-cream-400">
-          Tile {player.position + 1} — {tile.title}
-          {tile.moveValue > 1 && (
-            <span className="ml-2 bg-brass-400 px-1.5 py-0.5 font-black text-bar-900">
-              WORTH {tile.moveValue} TILES
-            </span>
-          )}
+    <section className="space-y-4">
+      {/* the receipt */}
+      <div className="receipt receipt-edge px-4 pb-5 pt-4">
+        <p className="ticket text-center text-[10px] tracking-[0.25em] text-ink-900/60">
+          ★ order of the day ★
         </p>
-        <h2 data-testid="goal-label" className="mt-1.5 text-xl font-black leading-tight">
+        <div className="mt-1.5 border-t-4 border-double border-ink-900/50" />
+        <p className="ticket mt-2 text-[10px] text-ink-900/60">
+          Tile {player.position + 1} — {tile.title}
+          {tile.moveValue > 1 && <span className="font-bold"> · worth {tile.moveValue} tiles</span>}
+        </p>
+        <h2 data-testid="goal-label" className="display mt-1 text-4xl leading-[0.95] text-ink-900">
           {goal.label}
         </h2>
+
+        <div className="mt-3 flex items-end justify-between border-t border-dashed border-ink-900/40 pt-2">
+          {isTask ? (
+            <p className="ticket text-xs text-ink-900/80">
+              {done ? "[x] job done" : "[ ] job not done yet"}
+            </p>
+          ) : (
+            <>
+              <div className="flex items-baseline gap-2">
+                <span className="relative h-12 w-16 overflow-hidden">
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.span
+                      key={player.progress}
+                      data-testid="goal-count"
+                      initial={{ y: -34, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: 34, opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 700, damping: 40 }}
+                      className={`display absolute inset-0 text-5xl tabular-nums ${done ? "[color:#177a3e]" : "text-ink-900"}`}
+                    >
+                      {player.progress}
+                    </motion.span>
+                  </AnimatePresence>
+                </span>
+                <span className="ticket text-xs text-ink-900/60">of {goal.target}</span>
+              </div>
+              {goal.target <= 14 && (
+                <div className="flex max-w-28 flex-wrap justify-end gap-1 pb-1.5">
+                  {Array.from({ length: goal.target }).map((_, i) => (
+                    <span
+                      key={i}
+                      className={`size-2 ${i < player.progress ? (done ? "bg-[#177a3e]" : "bg-ink-900") : "border border-ink-900/40"}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        {!done && player.progress > 0 && (
+          <p className="ticket mt-1 text-[10px] text-[#a02c2c]">
+            !! under count — they&apos;ll clock it !!
+          </p>
+        )}
       </div>
 
-      {/* the clicker */}
+      {/* the keys */}
       {isTask ? (
         <button
           onClick={() => punch(done ? -goal.target : goal.target)}
           aria-pressed={done}
-          className={`pos-key flex w-full items-center justify-center gap-2 border-2 px-4 py-4 font-black uppercase tracking-wide transition-colors ${
+          className={`pos-key display flex w-full items-center justify-center gap-2 border-2 px-4 py-4 text-2xl transition-colors ${
             done
               ? "border-mint-400 bg-mint-400/15 text-mint-400"
               : "border-bar-600 bg-bar-700 text-cream-400"
           }`}
         >
-          <CheckCircle2 className="size-5" />
           {done ? "Job's done" : "Job done? Punch it"}
         </button>
       ) : (
@@ -128,60 +175,29 @@ export default function QuestCard({ game, player, onBumpProgress, onSubmit }: Qu
           >
             <Minus className="size-5" />
           </button>
-          <div className="flex-1 rounded-md border-2 border-bar-600 bg-bar-950 px-3 py-2 text-center">
-            <div className="ticket flex items-baseline justify-center gap-2 text-cream-400">
-              <span className="relative h-11 w-16 overflow-hidden">
-                <AnimatePresence mode="popLayout" initial={false}>
-                  <motion.span
-                    key={player.progress}
-                    data-testid="goal-count"
-                    initial={{ y: -30, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: 30, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 700, damping: 40 }}
-                    className={`absolute inset-0 text-4xl font-black tabular-nums ${done ? "text-mint-400" : "text-brass-400"}`}
-                  >
-                    {player.progress}
-                  </motion.span>
-                </AnimatePresence>
-              </span>
-              <span className="text-sm">of {goal.target}</span>
-            </div>
-            {goal.target <= 14 && (
-              <div className="mt-1 flex flex-wrap justify-center gap-1">
-                {Array.from({ length: goal.target }).map((_, i) => (
-                  <span
-                    key={i}
-                    className={`size-2 ${
-                      i < player.progress ? (done ? "bg-mint-400" : "bg-brass-400") : "bg-bar-600"
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
           <button
             aria-label="Increase progress"
             onClick={() => punch(1)}
-            className="pos-key flex w-20 items-center justify-center border-2 border-brass-500 bg-brass-500/20 text-brass-400"
+            className="pos-key display flex flex-1 items-center justify-center gap-2 border-2 border-brass-400 bg-brass-500/20 py-4 text-3xl text-brass-400"
           >
-            <Plus className="size-7" />
+            <Plus className="size-7" /> Ring one in
           </button>
         </div>
       )}
 
-      {/* till photo + note */}
-      <button
-        onClick={() => (photo ? setPhoto(null) : fileRef.current?.click())}
-        className={`pos-key flex w-full items-center justify-center gap-2 border-2 px-3 py-3 text-sm font-bold uppercase tracking-wide transition-colors ${
-          photo
-            ? "border-mint-400 bg-mint-400/10 text-mint-400"
-            : "border-bar-600 bg-bar-700 text-cream-400"
-        }`}
-      >
-        <Camera className="size-4" />
-        {photo ? "Till shot attached — tap to bin" : "Snap the till"}
-      </button>
+      <div className="flex gap-3">
+        <button
+          onClick={() => (photo ? setPhoto(null) : fileRef.current?.click())}
+          className={`pos-key display flex flex-1 items-center justify-center gap-2 border-2 px-3 py-3 text-xl transition-colors ${
+            photo
+              ? "border-mint-400 bg-mint-400/10 text-mint-400"
+              : "border-bar-600 bg-bar-700 text-cream-400"
+          }`}
+        >
+          <Camera className="size-4" />
+          {photo ? "Till shot on — tap to bin" : "Snap the till"}
+        </button>
+      </div>
       <input
         value={note}
         onChange={(e) => setNote(e.target.value)}
@@ -189,18 +205,13 @@ export default function QuestCard({ game, player, onBumpProgress, onSubmit }: Qu
         maxLength={140}
         className="w-full rounded-md border-2 border-bar-600 bg-bar-950 px-3 py-2.5 text-sm text-cream-100 outline-none placeholder:text-cream-400 focus:border-brass-500"
       />
-
-      {/* send it */}
       <button
         disabled={player.progress === 0}
         onClick={submit}
-        className="pos-key flex w-full items-center justify-center gap-2 border-2 border-brass-400 bg-brass-500 px-4 py-3.5 font-black uppercase tracking-wide text-bar-950 disabled:opacity-40"
+        className="pos-key display flex w-full items-center justify-center gap-2 border-2 border-brass-400 bg-brass-500 px-4 py-3.5 text-2xl text-bar-950 disabled:opacity-40"
       >
-        <Send className="size-4" />
+        <Send className="size-5" />
         Send for sign-off
-        {!done && player.progress > 0 && (
-          <span className="text-xs font-bold normal-case opacity-70">(under count — they&apos;ll clock it)</span>
-        )}
       </button>
 
       <input

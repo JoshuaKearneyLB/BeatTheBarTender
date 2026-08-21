@@ -110,18 +110,18 @@ export default function ManagerSetup() {
       <Link href="/" className="flex items-center gap-1 text-sm text-cream-400">
         <ArrowLeft className="size-4" /> Front door
       </Link>
-      <h1 className="text-3xl font-black uppercase tracking-tight text-cream-100">
+      <h1 className="display -rotate-1 text-5xl leading-none text-brass-400 [text-shadow:3px_3px_0_rgba(0,0,0,0.6)]">
         Chalk up the board
       </h1>
 
       <form onSubmit={createCampaign} className="space-y-5">
         <label className="block space-y-1">
-          <span className="ticket text-[11px] text-cream-400">What&apos;s the month called?</span>
+          <span className="chalk text-xl text-cream-400">what&apos;s the month called?</span>
           <input value={name} onChange={(e) => setName(e.target.value)} className={field} required />
         </label>
 
         <div className="space-y-2">
-          <span className="ticket text-[11px] text-cream-400">House style</span>
+          <span className="chalk text-xl text-cream-400">house style</span>
           <div className="grid gap-2 sm:grid-cols-3">
             {CAMPAIGN_PRESETS.map((p) => (
               <button
@@ -129,21 +129,21 @@ export default function ManagerSetup() {
                 type="button"
                 onClick={() => setPreset(p.key)}
                 aria-pressed={preset === p.key}
-                className={`rounded-xl border p-3 text-left transition-colors ${
+                className={`rounded-sm border-2 p-3 text-left transition-all ${
                   preset === p.key
-                    ? "border-brass-500 bg-brass-500/10"
-                    : "border-bar-600 bg-bar-800"
+                    ? "slab -rotate-1 border-brass-400 bg-bar-800"
+                    : "border-bar-600 bg-bar-800/60"
                 }`}
               >
-                <span className="block font-semibold text-brass-400">{p.label}</span>
-                <span className="text-xs text-cream-400">{p.blurb}</span>
+                <span className="display block text-2xl leading-none text-brass-400">{p.label}</span>
+                <span className="chalk text-lg leading-tight text-cream-400">{p.blurb}</span>
               </button>
             ))}
           </div>
         </div>
 
         <label className="block space-y-1">
-          <span className="ticket text-[11px] text-cream-400">{boardLength} tiles on the board</span>
+          <span className="chalk text-xl text-cream-400">{boardLength} tiles on the board</span>
           <input
             type="range"
             min={20}
@@ -164,19 +164,19 @@ export default function ManagerSetup() {
         >
           <ShieldCheck className={`size-5 ${autoApprove ? "text-mint-400" : "text-cream-400"}`} />
           <span className="flex-1">
-            <span className="block text-sm font-black uppercase tracking-wide">
+            <span className="display block text-xl leading-none">
               Honor system {autoApprove ? "on" : "off"}
             </span>
-            <span className="text-xs text-cream-400">
+            <span className="chalk text-lg leading-tight text-cream-400">
               {autoApprove
-                ? "Counts clear themselves when the crew sends them in — except Last Call. You always sign the win."
-                : "Every count waits on your sign-off."}
+                ? "counts clear themselves — except Last Call. you always sign the win."
+                : "every count waits on your sign-off."}
             </span>
           </span>
         </button>
 
         <label className="block space-y-1">
-          <span className="ticket text-[11px] text-cream-400">Manager PIN — sign-offs & bumps</span>
+          <span className="chalk text-xl text-cream-400">manager PIN — sign-offs & bumps</span>
           <input
             type="password"
             inputMode="numeric"
@@ -193,7 +193,7 @@ export default function ManagerSetup() {
           <button
             type="button"
             onClick={() => setShowTiles((v) => !v)}
-            className="ticket flex w-full items-center justify-between px-4 py-3 text-xs font-black text-brass-400"
+            className="display flex w-full items-center justify-between px-4 py-3 text-xl text-brass-400"
           >
             Rework the tiles, one by one ({boardLength})
             {showTiles ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
@@ -294,7 +294,7 @@ export default function ManagerSetup() {
         <button
           type="submit"
           disabled={busy}
-          className="pos-key flex w-full items-center justify-center gap-2 border-2 border-brass-400 bg-brass-500 px-4 py-3 font-black uppercase tracking-wide text-bar-950 disabled:opacity-50"
+          className="pos-key display flex w-full items-center justify-center gap-2 border-2 border-brass-400 bg-brass-500 px-4 py-3 text-2xl text-bar-950 disabled:opacity-50"
         >
           {busy ? <Loader2 className="size-5 animate-spin" /> : <Dice5 className="size-5" />}
           {busy ? "Chalking it up…" : "Open the board"}

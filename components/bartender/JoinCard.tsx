@@ -29,13 +29,13 @@ export default function JoinCard({
   }
 
   return (
-    <form
-      onSubmit={submit}
-      className="slab space-y-4 rounded-lg border-2 border-bar-600 bg-bar-800 p-5"
-    >
+    <form onSubmit={submit} className="slab -rotate-1 space-y-4 rounded-sm bg-paper-100 p-5">
       <div>
-        <h2 className="ticket text-sm font-black text-brass-400">On tonight: “{gameName}”</h2>
-        <p className="mt-1 text-sm text-cream-400">Name on the rota, pick your piece.</p>
+        <p className="ticket text-[10px] text-ink-900/50">staff rota</p>
+        <h2 className="display mt-0.5 text-3xl leading-none text-ink-900">
+          On tonight: {gameName}
+        </h2>
+        <p className="chalk mt-1 text-xl text-ink-900/60">name on the card, pick your piece</p>
       </div>
       <input
         value={name}
@@ -43,7 +43,7 @@ export default function JoinCard({
         placeholder="What do they shout across the bar?"
         required
         maxLength={24}
-        className="w-full rounded-md border-2 border-bar-600 bg-bar-950 px-3 py-3 text-cream-100 outline-none placeholder:text-cream-400 focus:border-brass-500"
+        className="chalk w-full border-b-2 border-ink-900/40 bg-transparent px-1 py-2 text-2xl text-ink-900 outline-none placeholder:text-ink-900/40 focus:border-ink-900"
       />
       <div className="flex flex-wrap gap-2">
         {TOKENS.map((t) => (
@@ -52,8 +52,10 @@ export default function JoinCard({
             type="button"
             onClick={() => setToken(t)}
             aria-pressed={token === t}
-            className={`pos-key border-2 p-2 text-2xl transition-colors ${
-              token === t ? "border-brass-500 bg-brass-500/15" : "border-bar-600 bg-bar-900"
+            className={`rounded-sm border-2 p-2 text-2xl transition-transform ${
+              token === t
+                ? "-rotate-3 border-ink-900 bg-brass-400/40"
+                : "border-ink-900/20 bg-transparent"
             }`}
           >
             {t}
@@ -63,7 +65,7 @@ export default function JoinCard({
       <button
         type="submit"
         disabled={busy}
-        className="pos-key flex w-full items-center justify-center gap-2 border-2 border-brass-400 bg-brass-500 px-4 py-3 font-black uppercase tracking-wide text-bar-950 disabled:opacity-50"
+        className="pos-key display flex w-full items-center justify-center gap-2 border-2 border-ink-900 bg-ink-900 px-4 py-3 text-2xl text-paper-100 disabled:opacity-50"
       >
         <LogIn className="size-5" /> {busy ? "Clocking in…" : "Clock in"}
       </button>

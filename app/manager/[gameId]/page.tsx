@@ -34,7 +34,7 @@ function PhotoButton({
 }) {
   const [busy, setBusy] = useState(false);
   if (!submission.photoPath && !submission.photoUrl) {
-    return <span className="ticket text-[10px] text-cream-400">no till shot</span>;
+    return <span className="ticket text-[10px] text-ink-900/50">no till shot</span>;
   }
   return (
     <button
@@ -49,7 +49,7 @@ function PhotoButton({
           setBusy(false);
         }
       }}
-      className="ticket flex items-center gap-1 border border-brass-500/50 px-2 py-1 text-[10px] text-brass-400 disabled:opacity-50"
+      className="ticket flex items-center gap-1 border-2 border-ink-900/60 px-2 py-1 text-[10px] text-ink-900 disabled:opacity-50"
     >
       {busy ? <Loader2 className="size-3.5 animate-spin" /> : <ImageIcon className="size-3.5" />}
       till shot
@@ -78,8 +78,8 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
 
   if (mode === "connecting") {
     return (
-      <main className="ticket flex min-h-dvh items-center justify-center gap-2 text-cream-400">
-        <Loader2 className="size-5 animate-spin" /> Clocking you in…
+      <main className="chalk flex min-h-dvh items-center justify-center gap-2 text-2xl text-cream-400">
+        <Loader2 className="size-5 animate-spin" /> clocking you in…
       </main>
     );
   }
@@ -116,8 +116,9 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
   return (
     <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-4 px-4 py-4">
       <header className="flex items-center justify-between gap-3">
-        <Link href="/" className="flex items-center gap-1 text-sm text-cream-400">
-          <ArrowLeft className="size-4" /> {game.name} · gaffer
+        <Link href="/" className="flex items-center gap-1.5 text-cream-400">
+          <ArrowLeft className="size-4" />
+          <span className="display text-xl">{game.name} · gaffer</span>
         </Link>
         <div className="flex items-center gap-2">
           {mode === "live" && (
@@ -135,7 +136,7 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
               />
             </label>
           )}
-          <span className="ticket border border-brass-500/50 px-2 py-0.5 text-[10px] text-brass-400">
+          <span className="stamp text-xs text-brass-400">
             {mode === "demo" ? "Demo Mode" : game.autoApprove ? "Live · honor system" : "Live"}
           </span>
         </div>
@@ -143,14 +144,14 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
 
       <BoardStrip game={game} />
 
-      <section className="rounded-lg border-2 border-bar-600 bg-bar-800 p-3">
+      <section className="px-1">
         <EventTicker events={events} />
       </section>
 
       {/* sign-off queue */}
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <h2 className="ticket text-xs font-black text-brass-400">
+          <h2 className="display text-2xl text-brass-400">
             Sign-off queue{pending.length > 0 && ` · ${pending.length}`}
           </h2>
           {pending.length > 0 && (
@@ -158,14 +159,14 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
               <button
                 onClick={() => runReview(true)}
                 disabled={selectedIds.length === 0}
-                className="pos-key flex items-center gap-1 border-2 border-mint-400 bg-mint-400/10 px-3 py-1.5 text-sm font-black uppercase text-mint-400 disabled:opacity-40"
+                className="pos-key display flex items-center gap-1 border-2 border-mint-400 bg-mint-400/10 px-3 py-1.5 text-lg text-mint-400 disabled:opacity-40"
               >
                 <Check className="size-4" /> Sign off {selectedIds.length}
               </button>
               <button
                 onClick={() => runReview(false)}
                 disabled={selectedIds.length === 0}
-                className="pos-key flex items-center gap-1 border-2 border-danger-400 bg-danger-400/10 px-3 py-1.5 text-sm font-black uppercase text-danger-400 disabled:opacity-40"
+                className="pos-key display flex items-center gap-1 border-2 border-danger-400 bg-danger-400/10 px-3 py-1.5 text-lg text-danger-400 disabled:opacity-40"
               >
                 <X className="size-4" /> Bin it
               </button>
@@ -173,12 +174,12 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
           )}
         </div>
         {pending.length === 0 && (
-          <p className="text-sm text-cream-400">
-            Nothing on the spike.{" "}
-            {game.autoApprove ? "Honor system's running the floor — you only sign the win." : ""}
+          <p className="chalk text-xl text-cream-400">
+            nothing on the spike.{" "}
+            {game.autoApprove ? "honor system's running the floor — you only sign the win." : ""}
           </p>
         )}
-        <ul className="space-y-1.5">
+        <ul className="space-y-4">
           {pending.map((s) => {
             const player = game.players.find((p) => p.id === s.playerId);
             const tile = game.tiles[s.tilePosition];
@@ -186,7 +187,7 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
             return (
               <li
                 key={s.id}
-                className="flex items-center gap-3 border-2 border-bar-600 bg-bar-800 px-3 py-2"
+                className="receipt receipt-edge receipt-edge-top flex items-center gap-3 px-3 py-2.5"
               >
                 <input
                   type="checkbox"
@@ -196,17 +197,17 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
                   className="size-4 accent-brass-500"
                 />
                 <span className="text-xl">{player?.token}</span>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 text-ink-900">
                   <p className="truncate text-sm">
-                    <span className="font-bold">{player?.name}</span>
-                    <span className="text-cream-400"> · {tile?.goal.label}</span>
+                    <span className="display text-lg">{player?.name}</span>
+                    <span className="text-ink-900/60"> · {tile?.goal.label}</span>
                   </p>
-                  <p className="text-xs text-cream-400">
+                  <p className="ticket text-[10px] text-ink-900/70">
                     says{" "}
-                    <span className={`font-bold ${short ? "text-danger-400" : "text-mint-400"}`}>
+                    <span className={`font-bold ${short ? "text-[#a02c2c]" : "text-[#177a3e]"}`}>
                       {s.claimedValue} of {tile?.goal.target}
                     </span>
-                    {s.note && <span> · “{s.note}”</span>}
+                    {s.note && <span className="normal-case tracking-normal"> · “{s.note}”</span>}
                   </p>
                 </div>
                 <PhotoButton submission={s} resolve={photoUrl} />
@@ -218,7 +219,7 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
 
       {/* the roster */}
       <section className="space-y-2">
-        <h2 className="ticket text-xs font-black text-brass-400">The roster</h2>
+        <h2 className="display text-2xl text-brass-400">The roster</h2>
         {game.players.length === 0 && (
           <p className="text-sm text-cream-400">
             Empty bar. Crew clocks in at <span className="text-cream-100">/game/{gameId}</span>
@@ -231,12 +232,14 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
           >
             <span className="text-2xl">{p.token}</span>
             <div className="flex-1">
-              <p className="font-bold">
+              <p className="display text-xl">
                 {p.name}
                 {p.awaitingApproval && (
-                  <span className="ticket ml-2 text-[10px] text-brass-400">waiting on you</span>
+                  <span className="chalk ml-2 text-base text-brass-400">← waiting on you</span>
                 )}
-                {p.finished && <span className="ml-2 text-xs text-brass-400">🏆 rang last call</span>}
+                {p.finished && (
+                  <span className="chalk ml-2 text-base text-brass-400">rang last call 🏆</span>
+                )}
               </p>
               <p className="text-xs text-cream-400">
                 Tile {p.position + 1}/{game.boardLength} ·{" "}
@@ -264,29 +267,29 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
       </section>
 
       {/* the book */}
-      <section className="space-y-2">
-        <h2 className="ticket text-xs font-black text-brass-400">The book</h2>
+      <section className="space-y-2 pb-4">
+        <h2 className="display text-2xl text-brass-400">The book</h2>
         {history.length === 0 && (
-          <p className="text-sm text-cream-400">Nothing in the book yet.</p>
+          <p className="chalk text-xl text-cream-400">nothing in the book yet.</p>
         )}
-        <ul className="space-y-1">
+        <ul className="space-y-1.5">
           {history.map((s) => {
             const player = game.players.find((p) => p.id === s.playerId);
             return (
               <li
                 key={s.id}
-                className="flex items-center gap-2 border-2 border-bar-600 bg-bar-800 px-3 py-2 text-sm"
+                className="flex items-center gap-2 border-b border-dashed border-bar-600 px-1 py-2 text-sm"
               >
                 <span>{player?.token}</span>
                 <span className="min-w-0 flex-1 truncate text-cream-400">
                   {player?.name} · tile {s.tilePosition + 1} · said {s.claimedValue}
                 </span>
                 <span
-                  className={`ticket text-[10px] font-black ${s.status === "approved" ? "text-mint-400" : "text-danger-400"}`}
+                  className={`stamp text-sm ${s.status === "approved" ? "text-mint-400" : "text-danger-400"}`}
                 >
                   {s.status === "approved" ? "signed off" : "binned"}
                 </span>
-                <time className="text-xs text-cream-400">
+                <time className="ticket text-[10px] text-cream-400">
                   {new Date(s.submittedAt).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
