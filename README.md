@@ -26,9 +26,9 @@ provisioning anything.
 
 ### Going live (multi-device realtime)
 
-1. Create a Supabase project and run the three migrations in order
+1. Create a Supabase project and run the four migrations in order
    (`supabase db push`, or paste `supabase/migrations/*.sql` into the SQL
-   editor: 0001 → 0002 → 0003).
+   editor: 0001 → 0002 → 0003 → 0004).
 2. Enable **anonymous sign-ins** (Authentication → Providers) — staff join
    with a name and a game piece, no accounts needed.
 3. Copy `.env.example` to `.env.local` and fill in the project URL + anon key.
@@ -67,8 +67,7 @@ screen over Realtime.
   the token moves and the next quest reveals.
 - **Auto-trust toggle:** when on, submissions approve instantly — except on
   the final tile: **the win always waits for a manager**.
-- **Landing effects:** a few bonus/setback tiles skip you ahead or knock
-  you back on landing (applied once, never chained).
+- **Landing effects** apply once and never chain.
 - **Manager console:** a 1-tap batch approval queue (all pending
   submissions with claim-vs-target, notes, and photos via 60-second signed
   URLs — approve or reject a whole night in seconds), plus roster
@@ -78,12 +77,13 @@ screen over Realtime.
 
 The movement engine exists twice, on purpose: `lib/board.ts` (TypeScript)
 runs optimistically in the browser; `_apply_quest_approval` in
-`supabase/migrations/0003_campaign_quests.sql` (plpgsql) runs
-authoritatively in Postgres. Row Level Security blocks all direct writes —
-`create_campaign`, `join_game`, `update_progress`, `submit_quest`,
-`review_submissions`, and `manager_override` RPCs are the only write path
-(migration 0003 also **drops** the v0.2 tally RPCs so they can't bypass
-quest approval). Manager PIN checks are bcrypt-verified inside the RPCs,
+`supabase/migrations/0004_tile_editor.sql` (plpgsql) runs authoritatively
+in Postgres. Row Level Security blocks all direct writes — `create_campaign`,
+`join_game`, `update_progress`, `submit_quest`, `review_submissions`,
+`manager_override`, `update_tile`, `apply_board_template`,
+`replace_event_deck`, `upsert_event_card` and `delete_event_card` are the
+only write path (migration 0003 **drops** the v0.2 tally RPCs so they can't
+bypass sign-off). Manager PIN checks are bcrypt-verified inside the RPCs,
 atomically with the action they authorize. Supabase Realtime broadcasts
 player, submission, and game-status changes to every device.
 
@@ -93,7 +93,7 @@ player, submission, and game-status changes to every device.
 app/
   page.tsx                  Role picker (bartender / manager / training)
   game/[gameId]/page.tsx    Bartender view: join card → board + quest card
-  manager/page.tsx          Campaign Preset Builder (presets, tiles, trust, PIN)
+  manager/page.tsx          Campaign setup (name, template, length, trust, PIN)
   manager/[gameId]/page.tsx Manager console: approval queue, roster, history
 components/
   manager/BoardBuilder.tsx  Tile map, editor drawer, card deck, quick-apply
@@ -103,7 +103,7 @@ components/
   board/EventTicker.tsx     Play-by-play of board events
 lib/
   recipes.ts                The official 25-drink menu: specs, categories, quest labels
-  board.ts                  Presets + pure quest engine (mirrored in SQL)
+  board.ts                  Board templates + pure movement engine (mirrored in SQL)
   useGame.ts                One API, two engines (demo / live)
   useDemoGame.ts            Local reducer, seeded players + pending submission
   useLiveGame.ts            Auth + optimistic RPCs + Realtime reconciliation
@@ -136,7 +136,7 @@ public/training/            “Beat the Bartender” trivia on the official menu
   Chromium binary (`CHROMIUM_BIN`).
 - `npm run typecheck` / `npm run build` — strict TypeScript.
 
-## Known limits (v0.3)
+## Known limits (v0.4)
 
 - Anonymous sessions are per-browser; clearing site data orphans the player
   (manager can re-add via override).
