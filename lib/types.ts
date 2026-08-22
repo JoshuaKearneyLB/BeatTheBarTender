@@ -98,11 +98,24 @@ export interface QuestSubmission {
   reviewNote?: string;
 }
 
+/** What the crew are actually playing for. */
+export interface Prize {
+  title: string;
+  description?: string;
+  /** Emoji badge shown on the trophy card. */
+  badge: string;
+}
+
 export interface Game {
   id: string;
   name: string;
   status: GameStatus;
   boardLength: number;
+  prize: Prize;
+  /** Length of the marathon in days, for the countdown. */
+  campaignDays: number;
+  /** ISO timestamp the campaign opened; undefined until it starts. */
+  startedAt?: string;
   /** Manager toggle: sign off non-winning counts automatically. */
   autoApprove: boolean;
   campaignPreset?: string;

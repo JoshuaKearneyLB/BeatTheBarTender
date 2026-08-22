@@ -1,4 +1,4 @@
-# 🎲 Baropoly (v0.4 — Monthly Marathon)
+# 🎲 Baropoly (v0.5 — Monthly Marathon)
 
 Mobile-first PWA that gamifies bar sales as a digital board game. The
 manager builds a campaign: a 20–40 tile board where **every tile carries a
@@ -26,9 +26,9 @@ provisioning anything.
 
 ### Going live (multi-device realtime)
 
-1. Create a Supabase project and run the four migrations in order
+1. Create a Supabase project and run the five migrations in order
    (`supabase db push`, or paste `supabase/migrations/*.sql` into the SQL
-   editor: 0001 → 0002 → 0003 → 0004).
+   editor: 0001 → 0002 → 0003 → 0004 → 0005).
 2. Enable **anonymous sign-ins** (Authentication → Providers) — staff join
    with a name and a game piece, no accounts needed.
 3. Copy `.env.example` to `.env.local` and fill in the project URL + anon key.
@@ -61,6 +61,17 @@ screen over Realtime.
   tap-to-edit map, an editor drawer per tile, the event-card deck, and
   **quick-apply templates** — Chaos Shift, Cocktail Focus, Clean & Fast,
   High-Margin Spirits. Editable mid-campaign, not just at launch.
+- **The prize is on the board.** A pulsing trophy in the header opens a
+  full-screen poster: the badge, the title ("Monthly Winner: £250 Cash +
+  Weekend Off"), the manager's own rules, and how you actually take it.
+  Managers set it at campaign setup and can rewrite it any time from the
+  Board Builder.
+- **Two ways to look at the board.** *The rail* is the scrolling chalk
+  strip; *Full board* lays every tile clockwise around a ring
+  (30 tiles → a 9×8 perimeter, corners styled Monopoly-heavy) with the
+  ticker and quick stats — leader, days left, drinks rung in — filling the
+  middle. Tap any tile for its rule and who's standing on it; tokens fan
+  out when several players share a tile.
 - **Bartender flow:** the quest card shows the active goal; tap the counter
   as the shift goes (synced live so rivals can watch), attach one
   till/shift photo, submit. Status flips to *Pending approval*; on approval
@@ -100,6 +111,9 @@ components/
   bartender/QuestCard.tsx   Active quest, progress stepper, photo, submit
   bartender/JoinCard.tsx    Name + token picker (live mode)
   board/BoardStrip.tsx      Scrolling tile strip w/ animated tokens + ×2/×3 badges
+  board/SquareBoard.tsx     Monopoly-style ring board, centre stats, tile popover
+  board/PrizeModal.tsx      Full-screen prize poster
+  board/tileChalk.ts        Shared tile styling for both boards
   board/EventTicker.tsx     Play-by-play of board events
 lib/
   recipes.ts                The official 25-drink menu: specs, categories, quest labels
@@ -113,6 +127,7 @@ supabase/
   migrations/0002_engine_rpcs.sql  (v0.2 tally engine — superseded by 0003)
   migrations/0003_campaign_quests.sql  Goals, submissions, batch review, PIN
   migrations/0004_tile_editor.sql      Manager tile control, checkpoints, cards
+  migrations/0005_prize_and_board.sql  Prize fields + campaign length
   tests/                    Platform stub + engine behavioral tests
 scripts/
   test-db.sh                Throwaway-Postgres test runner (npm run test:db)
@@ -123,13 +138,14 @@ public/training/            “Beat the Bartender” trivia on the official menu
 
 ## Testing
 
-- `npm run test:db` — throwaway local Postgres, all migrations, 18
+- `npm run test:db` — throwaway local Postgres, all migrations, 19
   behavioral tests of the engine RPCs: create/join, progress sync, pending
   lock, duplicate rejection, PIN auth, batch approval movement, move value
   + landing setback, rejection, auto-trust, override supersede,
   manager-held win, **manager-defined tiles, the checkpoint floor holding
   against a −10 setback, PIN-gated tile edits, patch semantics, card draws,
-  template swaps, and refused mismatched templates**.
+  template swaps, refused mismatched templates, and a PIN-gated,
+  patch-safe prize**.
 - `npm run test:e2e` — Playwright smoke test of Demo Mode at phone size
   (progress → submit → pending; manager batch-approve moves the seeded
   player; training game). Needs `npm run build && npm start` and a
@@ -144,6 +160,11 @@ public/training/            “Beat the Bartender” trivia on the official menu
 - Manager overrides deliberately bypass the checkpoint floor — a checkpoint
   protects against the board, not against the gaffer.
 - Un-flagging a checkpoint doesn't lower floors players already banked.
+- The square board's corners fall where the ring geometry puts them: with
+  30 tiles that's 1, 8, 16 and 23. A closed rectangular ring of 30 cells
+  can't put corners on 1/10/20/30 — a 32-tile board gives a perfect 9×9
+  square with corners on 1/9/17/25.
+- The prize badge is an emoji, not an uploaded image.
 
 ## Roadmap to v0.5
 

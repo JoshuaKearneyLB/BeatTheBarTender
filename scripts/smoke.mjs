@@ -46,6 +46,38 @@ try {
   if (!counter.trim().startsWith("3")) throw new Error(`expected count 3, got "${counter}"`);
   await page.screenshot({ path: "/tmp/baropoly-bartender.png" });
 
+  // Trophy → prize modal → close
+  await page.click('[data-testid="prize-trophy"]');
+  await page.waitForSelector('[data-testid="prize-title"]');
+  const prizeTitle = await page.locator('[data-testid="prize-title"]').innerText();
+  if (!/£|cash|winner/i.test(prizeTitle)) throw new Error(`prize title looks wrong: "${prizeTitle}"`);
+  await page.waitForTimeout(600); // let the poster settle before the shot
+  await page.screenshot({ path: "/tmp/baropoly-prize.png" });
+  await page.click('[aria-label="Close the prize"]');
+  await page.waitForSelector('[data-testid="prize-title"]', { state: "detached" });
+
+  // Full square board: every tile placed, centre stats, tile popover
+  await page.click("text=Full board");
+  await page.waitForSelector('[data-testid="square-tile-0"]');
+  const squareTiles = await page.locator('[data-testid^="square-tile-"]').count();
+  if (squareTiles !== 30) throw new Error(`square board placed ${squareTiles} tiles, expected 30`);
+  const daysLeft = await page.locator('[data-testid="days-left"]').innerText();
+  if (!/^\d+$/.test(daysLeft.trim())) throw new Error(`days-left not a number: "${daysLeft}"`);
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: "/tmp/baropoly-square.png" });
+
+  // Tile 3 has Marco and Dee nearby; tap tile 2 (Marco's seeded position)
+  await page.click('[data-testid="square-tile-2"]');
+  await page.waitForSelector("text=Standing here");
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: "/tmp/baropoly-tile-popover.png" });
+  await page.click('[aria-label="Close tile"]');
+  await page.waitForTimeout(300);
+
+  // Back to the rail for the till pad
+  await page.click("text=The rail");
+  await page.waitForSelector('[data-testid="goal-label"]');
+
   // Send for sign-off → waiting state
   await page.click("text=Send for sign-off");
   await page.waitForSelector("text=Waiting on manager sign-off");
@@ -84,6 +116,11 @@ try {
   await page.waitForSelector("text=Dirty Well Penalty");
   await page.waitForTimeout(500); // let the drawer finish closing
   await page.screenshot({ path: "/tmp/baropoly-builder.png" });
+
+  // Manager owns the prize too
+  await page.fill('input[aria-label="Prize title"]', "Winner: £300 + a Friday off");
+  await page.click('[data-testid="save-prize"]');
+  await page.waitForSelector("text=Pinned up");
 
   // Training mini-game serves the official 25-drink menu
   const res = await page.goto(BASE + "/training/index.html");

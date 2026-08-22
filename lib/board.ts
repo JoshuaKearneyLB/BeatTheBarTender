@@ -471,3 +471,57 @@ export function applyOverride(
     ],
   };
 }
+
+// ---------- square board geometry ----------
+
+export interface RingCell {
+  position: number;
+  /** 1-indexed CSS grid coordinates. */
+  row: number;
+  col: number;
+  corner: boolean;
+}
+
+export interface RingLayout {
+  cols: number;
+  rows: number;
+  cells: RingCell[];
+}
+
+/**
+ * Lay n tiles clockwise around the perimeter of a grid, starting top-left.
+ * Picks the grid whose perimeter fits n exactly where possible (30 tiles →
+ * a 9×8 ring, zero gaps) and is otherwise as square as it can be. Corner
+ * cells are flagged so the board can give them Monopoly-style weight.
+ */
+export function ringLayout(n: number): RingLayout {
+  let best = { cols: 4, rows: 4, score: Number.POSITIVE_INFINITY };
+  for (let cols = 4; cols <= 24; cols++) {
+    for (let rows = 4; rows <= 24; rows++) {
+      const perimeter = 2 * cols + 2 * rows - 4;
+      if (perimeter < n) continue;
+      // Prefer no empty cells first, then the squarest shape.
+      const score = (perimeter - n) * 20 + Math.abs(cols - rows);
+      if (score < best.score) best = { cols, rows, score };
+    }
+  }
+
+  const { cols, rows } = best;
+  const path: Array<[number, number]> = [];
+  for (let c = 0; c < cols; c++) path.push([0, c]); // top, left → right
+  for (let r = 1; r < rows; r++) path.push([r, cols - 1]); // right, down
+  for (let c = cols - 2; c >= 0; c--) path.push([rows - 1, c]); // bottom, right → left
+  for (let r = rows - 2; r >= 1; r--) path.push([r, 0]); // left, up
+
+  const cells: RingCell[] = [];
+  for (let i = 0; i < n && i < path.length; i++) {
+    const [r, c] = path[i];
+    cells.push({
+      position: i,
+      row: r + 1,
+      col: c + 1,
+      corner: (r === 0 || r === rows - 1) && (c === 0 || c === cols - 1),
+    });
+  }
+  return { cols, rows, cells };
+}

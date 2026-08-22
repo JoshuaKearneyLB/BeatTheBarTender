@@ -6,27 +6,9 @@
 
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import type { Game, Tile } from "@/lib/types";
+import type { Game } from "@/lib/types";
+import { chalkFor } from "./tileChalk";
 
-const KIND_CHALK: Record<Tile["kind"], { border: string; text: string; mark: string }> = {
-  standard: { border: "border-cream-100/30", text: "text-cream-100/80", mark: "" },
-  goal: { border: "border-cream-100/30", text: "text-cream-100/80", mark: "" },
-  setback: { border: "border-danger-400/80", text: "text-danger-400", mark: "!!" },
-  event_card: { border: "border-brass-400/70", text: "text-brass-400", mark: "?" },
-  checkpoint: { border: "border-mint-400/80", text: "text-mint-400", mark: "✓" },
-  boss: { border: "border-brass-400", text: "text-brass-400", mark: "★" },
-};
-
-/** A tile's chalk styling, with bonus/penalty movement taking precedence. */
-function chalkFor(tile: Tile) {
-  if (tile.kind === "standard" && tile.movementEffect > 0) {
-    return { border: "border-mint-400/80", text: "text-mint-400", mark: "++" };
-  }
-  if (tile.movementEffect < 0 && tile.kind !== "setback") {
-    return { border: "border-danger-400/80", text: "text-danger-400", mark: "!!" };
-  }
-  return KIND_CHALK[tile.kind];
-}
 
 // Chalk boxes drawn in a hurry: deterministic tilt.
 const TILTS = [-1.4, 0.8, -0.6, 1.2, -1.0, 0.5];

@@ -29,6 +29,11 @@ export interface GameRow {
   auto_approve: boolean;
   campaign_preset: string | null;
   winner_player_id: string | null;
+  prize_title: string;
+  prize_description: string | null;
+  prize_badge: string;
+  campaign_days: number;
+  started_at: string | null;
 }
 
 export interface TileRow {
@@ -167,6 +172,13 @@ export async function fetchGame(
       boardLength: row.board_length,
       autoApprove: row.auto_approve,
       campaignPreset: row.campaign_preset ?? undefined,
+      prize: {
+        title: row.prize_title,
+        description: row.prize_description ?? undefined,
+        badge: row.prize_badge,
+      },
+      campaignDays: row.campaign_days,
+      startedAt: row.started_at ?? undefined,
       tiles: (tilesRes.data as TileRow[]).map(rowToTile),
       players: (playersRes.data as PlayerRow[]).map(rowToPlayer),
       cards: (cardsRes.data as EventCardRow[]).map(rowToCard),
@@ -192,6 +204,7 @@ export async function createCampaignLive(opts: {
   pin: string;
   tiles: Tile[];
   cards?: StarterCard[];
+  prize?: { title: string; description?: string; badge?: string; campaignDays?: number };
 }): Promise<string> {
   const supabase = mustClient();
   await ensureSignedIn(supabase);
@@ -209,6 +222,9 @@ export async function createCampaignLive(opts: {
       p_cards: opts.cards,
       p_pin: opts.pin || null,
     });
+  }
+  if (opts.prize) {
+    await updatePrize(supabase, gameId, opts.prize, opts.pin);
   }
   return gameId;
 }
@@ -316,6 +332,21 @@ export const replaceEventDeck = (
   rpc<number>(supabase, "replace_event_deck", {
     p_game_id: gameId,
     p_cards: cards,
+    p_pin: pin || null,
+  });
+
+export const updatePrize = (
+  supabase: SupabaseClient,
+  gameId: string,
+  prize: { title: string; description?: string; badge?: string; campaignDays?: number },
+  pin: string,
+) =>
+  rpc<GameRow>(supabase, "update_prize", {
+    p_game_id: gameId,
+    p_title: prize.title,
+    p_description: prize.description ?? null,
+    p_badge: prize.badge ?? null,
+    p_campaign_days: prize.campaignDays ?? null,
     p_pin: pin || null,
   });
 

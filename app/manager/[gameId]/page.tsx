@@ -73,6 +73,7 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
     applyTemplate,
     saveCard,
     deleteCard,
+    updatePrize,
   } = useGame(gameId);
   const [pin, setPin] = useState("");
   const [tab, setTab] = useState<"floor" | "builder">("floor");
@@ -188,6 +189,7 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
           onApplyTemplate={applyTemplate}
           onSaveCard={saveCard}
           onDeleteCard={deleteCard}
+          onUpdatePrize={updatePrize}
         />
       ) : (
         <>

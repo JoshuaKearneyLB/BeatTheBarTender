@@ -307,4 +307,31 @@ select assert(
   'T18 FAIL: old cards not cleared');
 \echo T18 PASS: event deck replaced
 
+-- === T19: the prize is manager-owned and PIN-gated ===
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000b', false);
+do $$
+declare v_failed boolean := false;
+begin
+  begin
+    perform update_prize((select id from games where name = 'Marathon C'),
+      'Hijacked', null, null, null, '9999');
+  exception when others then v_failed := true;
+  end;
+  if not v_failed then raise exception 'T19 FAIL: wrong PIN set the prize'; end if;
+end $$;
+
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', false);
+select prize_title, campaign_days from update_prize(:'game_c',
+  'Monthly Winner: £250 Cash + Weekend Off',
+  'First past Last Call with a manager sign-off takes the cash and gets first pick of next month''s shifts.',
+  '💷', 30, '4242') \gset t19
+select assert(:'t19prize_title' = 'Monthly Winner: £250 Cash + Weekend Off', 'T19 FAIL: title');
+select assert(:'t19campaign_days' = '30', 'T19 FAIL: campaign days');
+-- a null description must not wipe what is already there
+select update_prize(:'game_c', 'Same prize, new name', null, null, null, '4242');
+select assert(
+  (select prize_description is not null from games where id = :'game_c'),
+  'T19 FAIL: null description clobbered the stored one');
+\echo T19 PASS: prize stored, PIN-gated, patch-safe
+
 \echo === ALL BOARD-CONTROL TESTS PASSED ===

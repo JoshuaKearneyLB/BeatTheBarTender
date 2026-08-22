@@ -12,7 +12,15 @@ import {
   generateCampaignBoard,
   templateDeck,
 } from "./board";
-import type { BoardEvent, EventCard, Game, Player, QuestSubmission, TilePatch } from "./types";
+import type {
+  BoardEvent,
+  EventCard,
+  Game,
+  Player,
+  Prize,
+  QuestSubmission,
+  TilePatch,
+} from "./types";
 import type { GameApi } from "./useGame";
 
 function seedCards(templateKey: string): EventCard[] {
@@ -35,6 +43,14 @@ function seedState(id: string): State {
     boardLength,
     autoApprove: false,
     campaignPreset: preset,
+    prize: {
+      title: "Monthly Winner: £250 Cash + Weekend Off",
+      description:
+        "First past Last Call with a manager sign-off takes the £250 and gets first pick of next month's shifts. Under-counts get binned — snap the till.",
+      badge: "💷",
+    },
+    campaignDays: 30,
+    startedAt: new Date(Date.now() - 11 * 86_400_000).toISOString(),
     tiles: generateCampaignBoard(boardLength, preset, 42),
     cards: seedCards(preset),
     players: [
@@ -74,7 +90,8 @@ type Action =
   | { type: "TILE"; position: number; patch: TilePatch }
   | { type: "TEMPLATE"; templateKey: string }
   | { type: "CARD"; card: Partial<EventCard> & { name: string } }
-  | { type: "CARD_DELETE"; cardId: string };
+  | { type: "CARD_DELETE"; cardId: string }
+  | { type: "PRIZE"; prize: Prize & { campaignDays?: number } };
 
 function withPlayer(game: Game, next: Player): Game {
   return { ...game, players: game.players.map((p) => (p.id === next.id ? next : p)) };
@@ -244,6 +261,19 @@ function reducer(state: State, action: Action): State {
         ...state,
         game: { ...game, cards: game.cards.filter((c) => c.id !== action.cardId) },
       };
+    case "PRIZE":
+      return {
+        ...state,
+        game: {
+          ...game,
+          prize: {
+            title: action.prize.title,
+            description: action.prize.description,
+            badge: action.prize.badge,
+          },
+          campaignDays: action.prize.campaignDays ?? game.campaignDays,
+        },
+      };
   }
 }
 
@@ -288,6 +318,10 @@ export function useDemoGame(gameId: string): GameApi {
     (cardId: string) => dispatch({ type: "CARD_DELETE", cardId }),
     [],
   );
+  const updatePrize = useCallback(
+    (prize: Prize & { campaignDays?: number }) => dispatch({ type: "PRIZE", prize }),
+    [],
+  );
   const join = useCallback(async () => {}, []);
   const photoUrl = useCallback(async (sub: QuestSubmission) => sub.photoUrl ?? null, []);
 
@@ -306,5 +340,6 @@ export function useDemoGame(gameId: string): GameApi {
     applyTemplate,
     saveCard,
     deleteCard,
+    updatePrize,
   };
 }

@@ -8,7 +8,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Layers, Plus, ShieldCheck, Trash2, X } from "lucide-react";
+import { Check, Layers, Plus, ShieldCheck, Trash2, Trophy, X } from "lucide-react";
 import { BOARD_TEMPLATES } from "@/lib/board";
 import {
   byCategory,
@@ -18,7 +18,7 @@ import {
   sellQuestLabel,
   type MenuCategory,
 } from "@/lib/recipes";
-import type { EventCard, Game, GoalType, Tile, TileKind, TilePatch } from "@/lib/types";
+import type { EventCard, Game, GoalType, Prize, Tile, TileKind, TilePatch } from "@/lib/types";
 
 const CATEGORY_ORDER: MenuCategory[] = ["signature", "spritz", "classic", "non_alcoholic"];
 
@@ -54,6 +54,7 @@ interface BuilderProps {
   onApplyTemplate: (templateKey: string, pin?: string) => void;
   onSaveCard: (card: Partial<EventCard> & { name: string }, pin?: string) => void;
   onDeleteCard: (cardId: string, pin?: string) => void;
+  onUpdatePrize: (prize: Prize & { campaignDays?: number }, pin?: string) => void;
 }
 
 export default function BoardBuilder({
@@ -63,11 +64,17 @@ export default function BoardBuilder({
   onApplyTemplate,
   onSaveCard,
   onDeleteCard,
+  onUpdatePrize,
 }: BuilderProps) {
   const [editing, setEditing] = useState<number | null>(null);
   const [draft, setDraft] = useState<Tile | null>(null);
   const [confirmTemplate, setConfirmTemplate] = useState<string | null>(null);
   const [cardDraft, setCardDraft] = useState<(Partial<EventCard> & { name: string }) | null>(null);
+  const [prize, setPrize] = useState<Prize & { campaignDays: number }>({
+    ...game.prize,
+    campaignDays: game.campaignDays,
+  });
+  const [prizeSaved, setPrizeSaved] = useState(false);
 
   function openTile(tile: Tile) {
     setEditing(tile.position);
@@ -121,6 +128,71 @@ export default function BoardBuilder({
 
   return (
     <div className="space-y-6 pb-4">
+      {/* what they're playing for */}
+      <section className="space-y-2">
+        <h2 className="display flex items-center gap-2 text-2xl text-brass-400">
+          <Trophy className="size-5" /> The prize
+        </h2>
+        <p className="chalk text-lg text-cream-400">
+          this is what the crew see behind the trophy on their board
+        </p>
+        <div className="space-y-2 border-2 border-bar-600 bg-bar-800 p-3">
+          <div className="flex gap-2">
+            <input
+              value={prize.badge}
+              onChange={(e) => setPrize({ ...prize, badge: e.target.value.slice(0, 4) })}
+              aria-label="Prize badge"
+              className="w-14 rounded-md border-2 border-bar-600 bg-bar-950 px-2 py-2 text-center text-2xl"
+            />
+            <input
+              value={prize.title}
+              onChange={(e) => setPrize({ ...prize, title: e.target.value })}
+              placeholder="Monthly Winner: £250 Cash + Weekend Off"
+              aria-label="Prize title"
+              className={`flex-1 ${field}`}
+            />
+          </div>
+          <textarea
+            value={prize.description ?? ""}
+            onChange={(e) => setPrize({ ...prize, description: e.target.value })}
+            rows={3}
+            placeholder="The rules, in your words — who wins, what they get, what it takes."
+            aria-label="Prize description"
+            className={field}
+          />
+          <div className="flex items-end gap-2">
+            <label className="space-y-1">
+              <span className="ticket text-[10px] text-cream-400">Campaign runs</span>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={prize.campaignDays}
+                  onChange={(e) =>
+                    setPrize({ ...prize, campaignDays: Number(e.target.value) || 30 })
+                  }
+                  aria-label="Campaign days"
+                  className="w-20 rounded-md border-2 border-bar-600 bg-bar-950 px-2 py-2 text-sm text-cream-100"
+                />
+                <span className="chalk text-lg text-cream-400">days</span>
+              </div>
+            </label>
+            <button
+              data-testid="save-prize"
+              onClick={() => {
+                onUpdatePrize(prize, pin);
+                setPrizeSaved(true);
+                setTimeout(() => setPrizeSaved(false), 1800);
+              }}
+              className="pos-key display ml-auto flex items-center gap-1.5 border-2 border-brass-400 bg-brass-500 px-4 py-2.5 text-xl text-bar-950"
+            >
+              <Check className="size-4" /> {prizeSaved ? "Pinned up" : "Save prize"}
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* quick-apply */}
       <section className="space-y-2">
         <h2 className="display text-2xl text-brass-400">Quick-apply a house style</h2>

@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Dice5, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Dice5, Loader2, ShieldCheck, Trophy } from "lucide-react";
 import { BOARD_TEMPLATES, generateCampaignBoard, templateDeck } from "@/lib/board";
 import { isDemoMode } from "@/lib/supabase/client";
 import { createCampaignLive } from "@/lib/supabase/db";
@@ -18,6 +18,12 @@ export default function ManagerSetup() {
   const [preset, setPreset] = useState("cocktail_focus");
   const [autoApprove, setAutoApprove] = useState(false);
   const [pin, setPin] = useState("");
+  const [prizeTitle, setPrizeTitle] = useState("Monthly Winner: £250 Cash + Weekend Off");
+  const [prizeDescription, setPrizeDescription] = useState(
+    "First past Last Call with a manager sign-off takes the cash and gets first pick of next month's shifts.",
+  );
+  const [prizeBadge, setPrizeBadge] = useState("💷");
+  const [campaignDays, setCampaignDays] = useState(30);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +45,12 @@ export default function ManagerSetup() {
         pin,
         tiles: generateCampaignBoard(boardLength, preset, seed),
         cards: templateDeck(preset),
+        prize: {
+          title: prizeTitle,
+          description: prizeDescription,
+          badge: prizeBadge,
+          campaignDays,
+        },
       });
       try {
         sessionStorage.setItem("baropoly.manager-pin", pin);

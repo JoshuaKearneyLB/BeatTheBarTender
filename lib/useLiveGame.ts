@@ -26,13 +26,22 @@ import {
   replaceEventDeck,
   upsertEventCard,
   deleteEventCard as rpcDeleteEventCard,
+  updatePrize as rpcUpdatePrize,
   uploadReceipt,
   type GameRow,
   type PlayerRow,
   type SubmissionRow,
 } from "./supabase/db";
 import { subscribeToGame, type GameChange } from "./supabase/realtime";
-import type { BoardEvent, EventCard, Game, Player, QuestSubmission, TilePatch } from "./types";
+import type {
+  BoardEvent,
+  EventCard,
+  Game,
+  Player,
+  Prize,
+  QuestSubmission,
+  TilePatch,
+} from "./types";
 import type { GameApi } from "./useGame";
 
 interface LiveState {
@@ -136,6 +145,12 @@ function patchGame(state: LiveState, row: GameRow): LiveState {
       ...state.game,
       status: row.status,
       autoApprove: row.auto_approve,
+      prize: {
+        title: row.prize_title,
+        description: row.prize_description ?? undefined,
+        badge: row.prize_badge,
+      },
+      campaignDays: row.campaign_days,
       winnerId: row.winner_player_id ?? undefined,
     },
   };
@@ -396,6 +411,30 @@ export function useLiveGame(gameId: string, enabled: boolean): GameApi {
     [gameId, resync, warn],
   );
 
+  const updatePrize = useCallback(
+    (prize: Prize & { campaignDays?: number }, pin?: string) => {
+      const supabase = supabaseRef.current;
+      if (!supabase) return;
+      setState((prev) =>
+        prev.game
+          ? {
+              ...prev,
+              game: {
+                ...prev.game,
+                prize: { title: prize.title, description: prize.description, badge: prize.badge },
+                campaignDays: prize.campaignDays ?? prev.game.campaignDays,
+              },
+            }
+          : prev,
+      );
+      rpcUpdatePrize(supabase, gameId, prize, pin ?? "").catch((err: Error) => {
+        warn(`Prize update failed: ${err.message}`);
+        void resync();
+      });
+    },
+    [gameId, resync, warn],
+  );
+
   const photoUrl = useCallback(async (sub: QuestSubmission) => {
     const supabase = supabaseRef.current;
     if (!supabase || !sub.photoPath) return sub.photoUrl ?? null;
@@ -423,5 +462,6 @@ export function useLiveGame(gameId: string, enabled: boolean): GameApi {
     applyTemplate,
     saveCard,
     deleteCard,
+    updatePrize,
   };
 }

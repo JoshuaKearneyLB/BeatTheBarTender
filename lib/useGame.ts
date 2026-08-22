@@ -6,7 +6,15 @@
 //    optimistic local moves and Realtime reconciliation across devices.
 
 import { isDemoMode } from "./supabase/client";
-import type { BoardEvent, EventCard, Game, Player, QuestSubmission, TilePatch } from "./types";
+import type {
+  BoardEvent,
+  EventCard,
+  Game,
+  Player,
+  Prize,
+  QuestSubmission,
+  TilePatch,
+} from "./types";
 import { useDemoGame } from "./useDemoGame";
 import { useLiveGame } from "./useLiveGame";
 
@@ -39,6 +47,8 @@ export interface GameApi {
   saveCard: (card: Partial<EventCard> & { name: string }, pin?: string) => void;
   /** Manager: remove an event card. */
   deleteCard: (cardId: string, pin?: string) => void;
+  /** Manager: set what the crew are playing for. */
+  updatePrize: (prize: Prize & { campaignDays?: number }, pin?: string) => void;
 }
 
 export function useGame(gameId: string): GameApi {
