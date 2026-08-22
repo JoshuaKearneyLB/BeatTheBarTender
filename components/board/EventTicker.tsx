@@ -10,6 +10,7 @@ const KIND_COLOR: Record<BoardEvent["kind"], string> = {
   bonus: "text-mint-400",
   setback: "text-danger-400",
   checkpoint: "text-brass-400",
+  card: "text-brass-400",
   win: "text-brass-400",
   override: "text-cream-400",
   join: "text-cream-400",

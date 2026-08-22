@@ -1,6 +1,11 @@
 import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 
-export type GameTable = "games" | "game_players" | "quest_submissions";
+export type GameTable =
+  | "games"
+  | "game_players"
+  | "quest_submissions"
+  | "game_tiles"
+  | "event_cards";
 
 export interface GameChange {
   table: GameTable;
@@ -42,6 +47,16 @@ export function subscribeToGame(
       "postgres_changes",
       { event: "UPDATE", schema: "public", table: "games", filter: `id=eq.${gameId}` },
       forward("games"),
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "game_tiles", filter: `game_id=eq.${gameId}` },
+      forward("game_tiles"),
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "event_cards", filter: `game_id=eq.${gameId}` },
+      forward("event_cards"),
     )
     .subscribe();
 

@@ -1,4 +1,4 @@
-# 🎲 Baropoly (v0.3 — Monthly Marathon)
+# 🎲 Baropoly (v0.4 — Monthly Marathon)
 
 Mobile-first PWA that gamifies bar sales as a digital board game. The
 manager builds a campaign: a 20–40 tile board where **every tile carries a
@@ -39,18 +39,28 @@ screen over Realtime.
 
 ## The quest model
 
-- **Every tile is a quest** with a goal type (`volume` / `upsell` / `task`),
-  a target, and a **move value**: standard quests advance 1 tile, Hard
-  Quests (every 7th tile) 2, Boss Quests (every 10th) 3.
+- **Every tile is a manager-editable object**: its own kind (`standard`,
+  `goal`, `setback`, `event_card`, `checkpoint`, `boss`), name, house rule
+  text, **movement effect** for landing on it, optional target drink, and a
+  **move value** — what clearing its goal is worth (1 standard, 2 for a
+  Double Shift, 3 for a Boss Night).
+- **Checkpoints are a floor.** Flag any tile a checkpoint and no automatic
+  setback or event card can push a player below it, however harsh the
+  manager sets the numbers. Only a deliberate manager override crosses one.
+- **Event-card tiles draw the house deck.** Managers write the cards
+  ("Bribe the Barback: skip ahead 2", "Late to Shift: back 1"), weight how
+  often each comes up, and pin a card to a specific tile or leave it in the
+  general deck. Every draw is recorded.
 - **The official menu drives the goals.** `lib/recipes.ts` holds the
   venue's 25-drink menu — exact specs, spirits, and garnishes, across
   Hacien house signatures, spritzes, classics, and non-alcoholic serves.
   Preset boards generate quests like "Sell 10 Hacien Pineapple Spritzes",
   and the builder's **From menu…** dropdown lets managers target any drink
   or a whole category ("Sell 15 non-alcoholic cocktails").
-- **Campaign Preset Builder:** pick "Cocktail Focus", "High-Margin
-  Spirits", or "Balanced Shift" — or open the tile list and edit any tile's
-  goal text, type, target, and move value before launch.
+- **Board Builder** (a tab in the manager console): the whole board as a
+  tap-to-edit map, an editor drawer per tile, the event-card deck, and
+  **quick-apply templates** — Chaos Shift, Cocktail Focus, Clean & Fast,
+  High-Margin Spirits. Editable mid-campaign, not just at launch.
 - **Bartender flow:** the quest card shows the active goal; tap the counter
   as the shift goes (synced live so rivals can watch), attach one
   till/shift photo, submit. Status flips to *Pending approval*; on approval
@@ -86,6 +96,7 @@ app/
   manager/page.tsx          Campaign Preset Builder (presets, tiles, trust, PIN)
   manager/[gameId]/page.tsx Manager console: approval queue, roster, history
 components/
+  manager/BoardBuilder.tsx  Tile map, editor drawer, card deck, quick-apply
   bartender/QuestCard.tsx   Active quest, progress stepper, photo, submit
   bartender/JoinCard.tsx    Name + token picker (live mode)
   board/BoardStrip.tsx      Scrolling tile strip w/ animated tokens + ×2/×3 badges
@@ -101,7 +112,8 @@ supabase/
   migrations/0001_init.sql  Base schema, RLS, realtime, receipts bucket
   migrations/0002_engine_rpcs.sql  (v0.2 tally engine — superseded by 0003)
   migrations/0003_campaign_quests.sql  Goals, submissions, batch review, PIN
-  tests/                    Platform stub + quest RPC behavioral tests
+  migrations/0004_tile_editor.sql      Manager tile control, checkpoints, cards
+  tests/                    Platform stub + engine behavioral tests
 scripts/
   test-db.sh                Throwaway-Postgres test runner (npm run test:db)
   smoke.mjs                 Browser smoke test, mobile viewport (npm run test:e2e)
@@ -111,11 +123,13 @@ public/training/            “Beat the Bartender” trivia on the official menu
 
 ## Testing
 
-- `npm run test:db` — throwaway local Postgres, all migrations, 11
-  behavioral tests of the quest RPCs (create/join, progress sync, pending
-  lock, duplicate rejection, PIN auth, batch approval movement, hard-tile
-  move + landing setback, rejection, auto-trust, override supersede,
-  manager-held win).
+- `npm run test:db` — throwaway local Postgres, all migrations, 18
+  behavioral tests of the engine RPCs: create/join, progress sync, pending
+  lock, duplicate rejection, PIN auth, batch approval movement, move value
+  + landing setback, rejection, auto-trust, override supersede,
+  manager-held win, **manager-defined tiles, the checkpoint floor holding
+  against a −10 setback, PIN-gated tile edits, patch semantics, card draws,
+  template swaps, and refused mismatched templates**.
 - `npm run test:e2e` — Playwright smoke test of Demo Mode at phone size
   (progress → submit → pending; manager batch-approve moves the seeded
   player; training game). Needs `npm run build && npm start` and a
@@ -126,14 +140,15 @@ public/training/            “Beat the Bartender” trivia on the official menu
 
 - Anonymous sessions are per-browser; clearing site data orphans the player
   (manager can re-add via override).
-- Campaign tiles are fixed at launch; mid-campaign goal editing lands with
-  a `update_tile` RPC in a future rev.
 - One photo per submission (by design — the shift-summary shot).
+- Manager overrides deliberately bypass the checkpoint floor — a checkpoint
+  protects against the board, not against the gaffer.
+- Un-flagging a checkpoint doesn't lower floors players already banked.
 
-## Roadmap to v0.4
+## Roadmap to v0.5
 
 - Marathon summary screen + per-player history
-- Mid-campaign tile editing for managers
+- Player-vs-player mechanics (steal a tile, head-to-head challenges)
 - Offline submission queue via background sync in `sw.js`
 - Magic-link identity upgrade for persistent profiles
 - Sound + bigger win celebration

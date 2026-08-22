@@ -1,29 +1,46 @@
 "use client";
 
-// Demo Mode engine: the full quest loop on local seeded state, so every
-// screen works with zero setup. You are always player 1; the seeded bots
-// come with a pending submission and mid-quest progress so the manager
-// console has something to review immediately.
+// Demo Mode engine: the full loop on local seeded state, so every screen —
+// including the board builder — works with zero setup. You are always
+// player 1; the seeded crew comes with a count already on the spike.
 
 import { useCallback, useReducer } from "react";
-import { applyOverride, applyQuestApproval, generateCampaignBoard } from "./board";
-import type { BoardEvent, Game, Player, QuestSubmission } from "./types";
+import {
+  applyOverride,
+  applyQuestApproval,
+  boardTemplate,
+  generateCampaignBoard,
+  templateDeck,
+} from "./board";
+import type { BoardEvent, EventCard, Game, Player, QuestSubmission, TilePatch } from "./types";
 import type { GameApi } from "./useGame";
+
+function seedCards(templateKey: string): EventCard[] {
+  return templateDeck(templateKey).map((c, i) => ({
+    id: `demo-card-${i}`,
+    name: c.name,
+    ruleText: c.ruleText,
+    movementEffect: c.movementEffect,
+    weight: c.weight,
+  }));
+}
 
 function seedState(id: string): State {
   const boardLength = 30;
+  const preset = "cocktail_focus";
   const game: Game = {
     id,
     name: "Monthly Marathon",
     status: "active",
     boardLength,
     autoApprove: false,
-    campaignPreset: "balanced",
-    tiles: generateCampaignBoard(boardLength, "balanced", 42),
+    campaignPreset: preset,
+    tiles: generateCampaignBoard(boardLength, preset, 42),
+    cards: seedCards(preset),
     players: [
-      { id: "p1", name: "You", token: "🦊", position: 0, progress: 0, awaitingApproval: false, finished: false },
-      { id: "p2", name: "Marco", token: "🐙", position: 2, progress: 0, awaitingApproval: true, finished: false },
-      { id: "p3", name: "Dee", token: "🦉", position: 1, progress: 3, awaitingApproval: false, finished: false },
+      { id: "p1", name: "You", token: "🦊", position: 0, progress: 0, checkpointFloor: 0, awaitingApproval: false, finished: false },
+      { id: "p2", name: "Marco", token: "🐙", position: 2, progress: 0, checkpointFloor: 0, awaitingApproval: true, finished: false },
+      { id: "p3", name: "Dee", token: "🦉", position: 1, progress: 3, checkpointFloor: 0, awaitingApproval: false, finished: false },
     ],
   };
   return {
@@ -53,7 +70,11 @@ type Action =
   | { type: "PROGRESS"; playerId: string; delta: number }
   | { type: "SUBMIT"; playerId: string; photoUrl?: string; note?: string }
   | { type: "REVIEW"; ids: string[]; approve: boolean }
-  | { type: "OVERRIDE"; playerId: string; delta: number; reason: string };
+  | { type: "OVERRIDE"; playerId: string; delta: number; reason: string }
+  | { type: "TILE"; position: number; patch: TilePatch }
+  | { type: "TEMPLATE"; templateKey: string }
+  | { type: "CARD"; card: Partial<EventCard> & { name: string } }
+  | { type: "CARD_DELETE"; cardId: string };
 
 function withPlayer(game: Game, next: Player): Game {
   return { ...game, players: game.players.map((p) => (p.id === next.id ? next : p)) };
@@ -151,6 +172,78 @@ function reducer(state: State, action: Action): State {
         events: [...events, ...state.events].slice(0, 30),
       };
     }
+    case "TILE": {
+      const tiles = game.tiles.map((t) =>
+        t.position === action.position
+          ? { ...t, ...action.patch, goal: { ...t.goal, ...action.patch.goal } }
+          : t,
+      );
+      return {
+        ...state,
+        game: { ...game, tiles },
+        events: [
+          {
+            playerId: "",
+            kind: "override",
+            message: `Manager reworked tile ${action.position + 1} — “${tiles[action.position].name}”`,
+          } satisfies BoardEvent,
+          ...state.events,
+        ].slice(0, 30),
+      };
+    }
+    case "TEMPLATE": {
+      const tpl = boardTemplate(action.templateKey);
+      const tiles = generateCampaignBoard(
+        game.boardLength,
+        action.templateKey,
+        Math.floor(Math.random() * 2 ** 31),
+      );
+      return {
+        ...state,
+        game: {
+          ...game,
+          tiles,
+          cards: seedCards(action.templateKey),
+          campaignPreset: action.templateKey,
+          players: game.players.map((p) => ({ ...p, checkpointFloor: 0 })),
+        },
+        events: [
+          {
+            playerId: "",
+            kind: "override",
+            message: `Manager chalked up a fresh board — “${tpl.label}”`,
+          } satisfies BoardEvent,
+          ...state.events,
+        ].slice(0, 30),
+      };
+    }
+    case "CARD": {
+      const existing = action.card.id
+        ? game.cards.find((c) => c.id === action.card.id)
+        : undefined;
+      const card: EventCard = {
+        id: existing?.id ?? crypto.randomUUID(),
+        name: action.card.name,
+        ruleText: action.card.ruleText,
+        movementEffect: action.card.movementEffect ?? 0,
+        weight: action.card.weight ?? 1,
+        tilePosition: action.card.tilePosition,
+      };
+      return {
+        ...state,
+        game: {
+          ...game,
+          cards: existing
+            ? game.cards.map((c) => (c.id === card.id ? card : c))
+            : [...game.cards, card],
+        },
+      };
+    }
+    case "CARD_DELETE":
+      return {
+        ...state,
+        game: { ...game, cards: game.cards.filter((c) => c.id !== action.cardId) },
+      };
   }
 }
 
@@ -179,6 +272,22 @@ export function useDemoGame(gameId: string): GameApi {
       dispatch({ type: "OVERRIDE", playerId, delta, reason }),
     [],
   );
+  const updateTile = useCallback(
+    (position: number, patch: TilePatch) => dispatch({ type: "TILE", position, patch }),
+    [],
+  );
+  const applyTemplate = useCallback(
+    (templateKey: string) => dispatch({ type: "TEMPLATE", templateKey }),
+    [],
+  );
+  const saveCard = useCallback(
+    (card: Partial<EventCard> & { name: string }) => dispatch({ type: "CARD", card }),
+    [],
+  );
+  const deleteCard = useCallback(
+    (cardId: string) => dispatch({ type: "CARD_DELETE", cardId }),
+    [],
+  );
   const join = useCallback(async () => {}, []);
   const photoUrl = useCallback(async (sub: QuestSubmission) => sub.photoUrl ?? null, []);
 
@@ -193,5 +302,9 @@ export function useDemoGame(gameId: string): GameApi {
     review,
     override,
     photoUrl,
+    updateTile,
+    applyTemplate,
+    saveCard,
+    deleteCard,
   };
 }

@@ -6,7 +6,7 @@
 //    optimistic local moves and Realtime reconciliation across devices.
 
 import { isDemoMode } from "./supabase/client";
-import type { BoardEvent, Game, Player, QuestSubmission } from "./types";
+import type { BoardEvent, EventCard, Game, Player, QuestSubmission, TilePatch } from "./types";
 import { useDemoGame } from "./useDemoGame";
 import { useLiveGame } from "./useLiveGame";
 
@@ -31,6 +31,14 @@ export interface GameApi {
   override: (playerId: string, delta: number, reason: string, pin?: string) => void;
   /** Resolve a viewable URL for a submission's photo (signed URL in live mode). */
   photoUrl: (submission: QuestSubmission) => Promise<string | null>;
+  /** Manager: edit one tile in place; only the keys in the patch change. */
+  updateTile: (position: number, patch: TilePatch, pin?: string) => void;
+  /** Manager: swap the whole board (and its deck) for a template. */
+  applyTemplate: (templateKey: string, pin?: string) => void;
+  /** Manager: add or edit an event card. */
+  saveCard: (card: Partial<EventCard> & { name: string }, pin?: string) => void;
+  /** Manager: remove an event card. */
+  deleteCard: (cardId: string, pin?: string) => void;
 }
 
 export function useGame(gameId: string): GameApi {

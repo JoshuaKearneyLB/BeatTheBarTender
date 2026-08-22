@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { generateCampaignBoard, templateDeck } from "./board";
 import { ensureSignedIn } from "./supabase/auth";
 import { getSupabaseBrowser } from "./supabase/client";
 import {
@@ -20,13 +21,18 @@ import {
   signedReceiptUrl,
   submitQuest as rpcSubmitQuest,
   updateProgress,
+  updateTile as rpcUpdateTile,
+  applyBoardTemplate,
+  replaceEventDeck,
+  upsertEventCard,
+  deleteEventCard as rpcDeleteEventCard,
   uploadReceipt,
   type GameRow,
   type PlayerRow,
   type SubmissionRow,
 } from "./supabase/db";
 import { subscribeToGame, type GameChange } from "./supabase/realtime";
-import type { BoardEvent, Game, Player, QuestSubmission } from "./types";
+import type { BoardEvent, EventCard, Game, Player, QuestSubmission, TilePatch } from "./types";
 import type { GameApi } from "./useGame";
 
 interface LiveState {
@@ -65,7 +71,7 @@ function diffPlayerEvents(prev: Player | undefined, next: Player, game: Game): B
       kind: next.position > prev.position ? "advance" : "setback",
       message:
         next.position > prev.position
-          ? `${next.name} moves up to “${tile?.title ?? `tile ${next.position + 1}`}”`
+          ? `${next.name} moves up to “${tile?.name ?? `tile ${next.position + 1}`}”`
           : `${next.name} knocked back to tile ${next.position + 1}`,
     });
   }
@@ -182,6 +188,12 @@ export function useLiveGame(gameId: string, enabled: boolean): GameApi {
               return patchSubmission(s, change.new as unknown as SubmissionRow);
             case "games":
               return patchGame(s, change.new as unknown as GameRow);
+            case "game_tiles":
+            case "event_cards":
+              // Board edits are rare and cross-cutting; refetch rather than
+              // reconcile tile-by-tile.
+              void resync();
+              return s;
           }
         });
       });
@@ -193,7 +205,7 @@ export function useLiveGame(gameId: string, enabled: boolean): GameApi {
       cancelled = true;
       unsubscribe?.();
     };
-  }, [gameId, enabled]);
+  }, [gameId, enabled, resync]);
 
   const findMe = useCallback((s: LiveState) => {
     return s.game?.players.find((p) => p.profileId === s.userId) ?? null;
@@ -311,6 +323,79 @@ export function useLiveGame(gameId: string, enabled: boolean): GameApi {
     [gameId, resync, warn],
   );
 
+  const updateTile = useCallback(
+    (position: number, patch: TilePatch, pin?: string) => {
+      const supabase = supabaseRef.current;
+      if (!supabase) return;
+      // Optimistic: the editor should feel instant under the manager's thumb.
+      setState((prev) =>
+        prev.game
+          ? {
+              ...prev,
+              game: {
+                ...prev.game,
+                tiles: prev.game.tiles.map((t) =>
+                  t.position === position
+                    ? { ...t, ...patch, goal: { ...t.goal, ...patch.goal } }
+                    : t,
+                ),
+              },
+            }
+          : prev,
+      );
+      rpcUpdateTile(supabase, gameId, position, patch, pin ?? "")
+        .catch((err: Error) => {
+          warn(`Tile edit failed: ${err.message}`);
+          void resync();
+        });
+    },
+    [gameId, resync, warn],
+  );
+
+  const applyTemplate = useCallback(
+    (templateKey: string, pin?: string) => {
+      const supabase = supabaseRef.current;
+      const s = stateRef.current;
+      if (!supabase || !s.game) return;
+      const tiles = generateCampaignBoard(
+        s.game.boardLength,
+        templateKey,
+        Math.floor(Math.random() * 2 ** 31),
+      );
+      (async () => {
+        await applyBoardTemplate(supabase, gameId, tiles, templateKey, pin ?? "");
+        await replaceEventDeck(supabase, gameId, templateDeck(templateKey), pin ?? "");
+        await resync();
+      })().catch((err: Error) => {
+        warn(`Template failed: ${err.message}`);
+        void resync();
+      });
+    },
+    [gameId, resync, warn],
+  );
+
+  const saveCard = useCallback(
+    (card: Partial<EventCard> & { name: string }, pin?: string) => {
+      const supabase = supabaseRef.current;
+      if (!supabase) return;
+      upsertEventCard(supabase, gameId, card, pin ?? "")
+        .then(() => resync())
+        .catch((err: Error) => warn(`Card save failed: ${err.message}`));
+    },
+    [gameId, resync, warn],
+  );
+
+  const deleteCard = useCallback(
+    (cardId: string, pin?: string) => {
+      const supabase = supabaseRef.current;
+      if (!supabase) return;
+      rpcDeleteEventCard(supabase, gameId, cardId, pin ?? "")
+        .then(() => resync())
+        .catch((err: Error) => warn(`Card delete failed: ${err.message}`));
+    },
+    [gameId, resync, warn],
+  );
+
   const photoUrl = useCallback(async (sub: QuestSubmission) => {
     const supabase = supabaseRef.current;
     if (!supabase || !sub.photoPath) return sub.photoUrl ?? null;
@@ -334,5 +419,9 @@ export function useLiveGame(gameId: string, enabled: boolean): GameApi {
     review,
     override,
     photoUrl,
+    updateTile,
+    applyTemplate,
+    saveCard,
+    deleteCard,
   };
 }

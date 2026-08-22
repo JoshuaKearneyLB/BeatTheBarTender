@@ -6,17 +6,27 @@
 
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import type { Game, TileType } from "@/lib/types";
+import type { Game, Tile } from "@/lib/types";
 
-const CHALK: Record<TileType, { border: string; text: string; mark: string }> = {
-  start: { border: "border-cream-100/70", text: "text-cream-100", mark: "→" },
-  progress: { border: "border-cream-100/30", text: "text-cream-100/80", mark: "" },
-  challenge: { border: "border-brass-400/80", text: "text-brass-400", mark: "★" },
+const KIND_CHALK: Record<Tile["kind"], { border: string; text: string; mark: string }> = {
+  standard: { border: "border-cream-100/30", text: "text-cream-100/80", mark: "" },
+  goal: { border: "border-cream-100/30", text: "text-cream-100/80", mark: "" },
   setback: { border: "border-danger-400/80", text: "text-danger-400", mark: "!!" },
-  bonus: { border: "border-mint-400/80", text: "text-mint-400", mark: "++" },
-  checkpoint: { border: "border-brass-400/80", text: "text-brass-400", mark: "✓?" },
-  finish: { border: "border-brass-400", text: "text-brass-400", mark: "★★" },
+  event_card: { border: "border-brass-400/70", text: "text-brass-400", mark: "?" },
+  checkpoint: { border: "border-mint-400/80", text: "text-mint-400", mark: "✓" },
+  boss: { border: "border-brass-400", text: "text-brass-400", mark: "★" },
 };
+
+/** A tile's chalk styling, with bonus/penalty movement taking precedence. */
+function chalkFor(tile: Tile) {
+  if (tile.kind === "standard" && tile.movementEffect > 0) {
+    return { border: "border-mint-400/80", text: "text-mint-400", mark: "++" };
+  }
+  if (tile.movementEffect < 0 && tile.kind !== "setback") {
+    return { border: "border-danger-400/80", text: "text-danger-400", mark: "!!" };
+  }
+  return KIND_CHALK[tile.kind];
+}
 
 // Chalk boxes drawn in a hurry: deterministic tilt.
 const TILTS = [-1.4, 0.8, -0.6, 1.2, -1.0, 0.5];
@@ -38,7 +48,7 @@ export default function BoardStrip({ game, meId }: { game: Game; meId?: string }
         <div className="flex w-max items-stretch gap-2.5 px-1 py-1">
           {game.tiles.map((tile) => {
             const here = game.players.filter((p) => p.position === tile.position);
-            const chalk = CHALK[tile.type];
+            const chalk = chalkFor(tile);
             const mine = me?.position === tile.position;
             return (
               <div
@@ -56,7 +66,7 @@ export default function BoardStrip({ game, meId }: { game: Game; meId?: string }
                   </span>
                   <span>{chalk.mark}</span>
                 </div>
-                <p className={`chalk text-sm leading-[1.05] ${chalk.text}`}>{tile.title}</p>
+                <p className={`chalk text-sm leading-[1.05] ${chalk.text}`}>{tile.name}</p>
                 <div className="flex h-6 items-end gap-0.5">
                   {here.map((p) => (
                     <motion.span

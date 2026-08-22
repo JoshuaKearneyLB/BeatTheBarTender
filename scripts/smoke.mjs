@@ -53,15 +53,7 @@ try {
   // Manager: campaign builder → console → batch approve the seeded queue
   await page.goto(BASE + "/manager");
   await page.waitForSelector("text=Chalk up the board");
-  await page.waitForSelector("text=Cocktail Focus"); // presets rendered
-  // Goal builder: tile list carries the official-menu drink dropdown
-  await page.click("text=Rework the tiles");
-  await page.waitForSelector('select[aria-label="Pick a menu drink for tile 1"]');
-  const menuOptions = await page
-    .locator('select[aria-label="Pick a menu drink for tile 1"] option')
-    .count();
-  if (menuOptions < 26) throw new Error(`menu dropdown too small: ${menuOptions} options`);
-  await page.click("text=Rework the tiles"); // collapse again
+  await page.waitForSelector("text=Chaos Shift"); // board templates rendered
   await page.click("text=Open the board");
   await page.waitForURL("**/manager/demo");
   await page.waitForSelector("text=Sign-off queue");
@@ -70,6 +62,28 @@ try {
   await page.waitForSelector("text=Marco ticked off");
   await page.waitForSelector("text=signed off"); // the book
   await page.screenshot({ path: "/tmp/baropoly-manager.png" });
+
+  // Board builder: full tile map, editor drawer, custom setback + checkpoint
+  await page.click("text=Board builder");
+  await page.waitForSelector('[data-testid="builder-tile-0"]');
+  const tileCount = await page.locator('[data-testid^="builder-tile-"]').count();
+  if (tileCount !== 30) throw new Error(`builder shows ${tileCount} tiles, expected 30`);
+  const deckCount = await page.locator("text=The deck").count();
+  if (deckCount < 1) throw new Error("event card deck missing from builder");
+
+  await page.click('[data-testid="builder-tile-5"]');
+  await page.waitForSelector('[data-testid="tile-movement-effect"]');
+  const menuOptions = await page.locator('select[aria-label="Pick a menu drink"] option').count();
+  if (menuOptions < 26) throw new Error(`menu dropdown too small: ${menuOptions} options`);
+
+  await page.fill('input[aria-label="Tile name"]', "Dirty Well Penalty");
+  await page.fill('[data-testid="tile-movement-effect"]', "-3");
+  await page.click('button[aria-label="Checkpoint off"]').catch(() => {});
+  await page.screenshot({ path: "/tmp/baropoly-builder-drawer.png" });
+  await page.click('[data-testid="save-tile"]');
+  await page.waitForSelector("text=Dirty Well Penalty");
+  await page.waitForTimeout(500); // let the drawer finish closing
+  await page.screenshot({ path: "/tmp/baropoly-builder.png" });
 
   // Training mini-game serves the official 25-drink menu
   const res = await page.goto(BASE + "/training/index.html");

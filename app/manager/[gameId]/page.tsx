@@ -18,6 +18,7 @@ import {
   WifiOff,
   X,
 } from "lucide-react";
+import BoardBuilder from "@/components/manager/BoardBuilder";
 import BoardStrip from "@/components/board/BoardStrip";
 import EventTicker from "@/components/board/EventTicker";
 import { useGame } from "@/lib/useGame";
@@ -59,8 +60,22 @@ function PhotoButton({
 
 export default function ManagerConsole({ params }: { params: Promise<{ gameId: string }> }) {
   const { gameId } = use(params);
-  const { mode, error, game, submissions, events, review, override, photoUrl } = useGame(gameId);
+  const {
+    mode,
+    error,
+    game,
+    submissions,
+    events,
+    review,
+    override,
+    photoUrl,
+    updateTile,
+    applyTemplate,
+    saveCard,
+    deleteCard,
+  } = useGame(gameId);
   const [pin, setPin] = useState("");
+  const [tab, setTab] = useState<"floor" | "builder">("floor");
   const [deselected, setDeselected] = useState<Set<string>>(new Set());
 
   // PIN sticks for the session so it's typed once per shift.
@@ -142,6 +157,40 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
         </div>
       </header>
 
+      {/* which side of the bar are we on */}
+      <nav className="flex gap-1 border-b-2 border-bar-600">
+        {(
+          [
+            ["floor", `The floor${pending.length ? ` · ${pending.length}` : ""}`],
+            ["builder", "Board builder"],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            aria-pressed={tab === key}
+            className={`display -mb-0.5 border-b-4 px-3 py-2 text-xl transition-colors ${
+              tab === key
+                ? "border-brass-400 text-brass-400"
+                : "border-transparent text-cream-400"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {tab === "builder" ? (
+        <BoardBuilder
+          game={game}
+          pin={pin}
+          onUpdateTile={updateTile}
+          onApplyTemplate={applyTemplate}
+          onSaveCard={saveCard}
+          onDeleteCard={deleteCard}
+        />
+      ) : (
+        <>
       <BoardStrip game={game} />
 
       <section className="px-1">
@@ -300,6 +349,8 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
           })}
         </ul>
       </section>
+        </>
+      )}
     </main>
   );
 }

@@ -1,9 +1,10 @@
 // Row types, mappers, and data access for live (Supabase) mode. All game
 // state mutations go through the RPCs defined in
-// supabase/migrations/0003_campaign_quests.sql — the database is the referee.
+// supabase/migrations/0004_tile_editor.sql — the database is the referee.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
+  EventCard,
   Game,
   GameStatus,
   GoalType,
@@ -11,8 +12,10 @@ import type {
   QuestSubmission,
   SubmissionStatus,
   Tile,
-  TileType,
+  TileKind,
+  TilePatch,
 } from "@/lib/types";
+import type { StarterCard } from "@/lib/board";
 import { ensureSignedIn } from "./auth";
 import { getSupabaseBrowser } from "./client";
 
@@ -30,14 +33,26 @@ export interface GameRow {
 
 export interface TileRow {
   position: number;
-  tile_type: TileType;
-  title: string;
-  description: string | null;
-  move_delta: number;
+  kind: TileKind;
+  tile_name: string;
+  custom_rule_text: string | null;
+  movement_effect: number;
+  is_checkpoint: boolean;
+  target_drink_id: string | null;
   goal_type: GoalType;
   goal_target: number;
   goal_label: string;
   move_value: number;
+}
+
+export interface EventCardRow {
+  id: string;
+  game_id: string;
+  tile_position: number | null;
+  card_name: string;
+  rule_text: string | null;
+  movement_effect: number;
+  weight: number;
 }
 
 export interface PlayerRow {
@@ -48,6 +63,7 @@ export interface PlayerRow {
   token_emoji: string;
   position: number;
   progress: number;
+  checkpoint_floor: number;
   awaiting_approval: boolean;
   finished: boolean;
 }
@@ -70,12 +86,25 @@ export interface SubmissionRow {
 export function rowToTile(r: TileRow): Tile {
   return {
     position: r.position,
-    type: r.tile_type,
-    title: r.title,
-    description: r.description ?? undefined,
-    move: r.move_delta !== 0 ? r.move_delta : undefined,
+    kind: r.kind,
+    name: r.tile_name,
+    ruleText: r.custom_rule_text ?? undefined,
+    movementEffect: r.movement_effect,
+    isCheckpoint: r.is_checkpoint,
+    targetDrinkId: r.target_drink_id ?? undefined,
     goal: { type: r.goal_type, label: r.goal_label, target: r.goal_target },
     moveValue: r.move_value,
+  };
+}
+
+export function rowToCard(r: EventCardRow): EventCard {
+  return {
+    id: r.id,
+    tilePosition: r.tile_position ?? undefined,
+    name: r.card_name,
+    ruleText: r.rule_text ?? undefined,
+    movementEffect: r.movement_effect,
+    weight: r.weight,
   };
 }
 
@@ -87,6 +116,7 @@ export function rowToPlayer(r: PlayerRow): Player {
     token: r.token_emoji,
     position: r.position,
     progress: r.progress,
+    checkpointFloor: r.checkpoint_floor ?? 0,
     awaitingApproval: r.awaiting_approval,
     finished: r.finished,
   };
@@ -112,7 +142,7 @@ export async function fetchGame(
   supabase: SupabaseClient,
   gameId: string,
 ): Promise<{ game: Game; submissions: QuestSubmission[] }> {
-  const [gameRes, tilesRes, playersRes, subsRes] = await Promise.all([
+  const [gameRes, tilesRes, playersRes, subsRes, cardsRes] = await Promise.all([
     supabase.from("games").select("*").eq("id", gameId).single(),
     supabase.from("game_tiles").select("*").eq("game_id", gameId).order("position"),
     supabase.from("game_players").select("*").eq("game_id", gameId).order("joined_at"),
@@ -122,8 +152,10 @@ export async function fetchGame(
       .eq("game_id", gameId)
       .order("submitted_at", { ascending: false })
       .limit(200),
+    supabase.from("event_cards").select("*").eq("game_id", gameId).order("created_at"),
   ]);
-  const firstError = gameRes.error ?? tilesRes.error ?? playersRes.error ?? subsRes.error;
+  const firstError =
+    gameRes.error ?? tilesRes.error ?? playersRes.error ?? subsRes.error ?? cardsRes.error;
   if (firstError) throw new Error(`Failed to load game: ${firstError.message}`);
 
   const row = gameRes.data as GameRow;
@@ -137,6 +169,7 @@ export async function fetchGame(
       campaignPreset: row.campaign_preset ?? undefined,
       tiles: (tilesRes.data as TileRow[]).map(rowToTile),
       players: (playersRes.data as PlayerRow[]).map(rowToPlayer),
+      cards: (cardsRes.data as EventCardRow[]).map(rowToCard),
       winnerId: row.winner_player_id ?? undefined,
     },
     submissions: (subsRes.data as SubmissionRow[]).map(rowToSubmission),
@@ -158,10 +191,11 @@ export async function createCampaignLive(opts: {
   autoApprove: boolean;
   pin: string;
   tiles: Tile[];
+  cards?: StarterCard[];
 }): Promise<string> {
   const supabase = mustClient();
   await ensureSignedIn(supabase);
-  return rpc<string>(supabase, "create_campaign", {
+  const gameId = await rpc<string>(supabase, "create_campaign", {
     p_name: opts.name,
     p_board_length: opts.boardLength,
     p_preset: opts.preset,
@@ -169,6 +203,14 @@ export async function createCampaignLive(opts: {
     p_pin: opts.pin,
     p_tiles: opts.tiles,
   });
+  if (opts.cards?.length) {
+    await rpc<number>(supabase, "replace_event_deck", {
+      p_game_id: gameId,
+      p_cards: opts.cards,
+      p_pin: opts.pin || null,
+    });
+  }
+  return gameId;
 }
 
 export const joinGame = (
@@ -232,6 +274,77 @@ export const managerOverride = (
     p_player_id: playerId,
     p_delta: delta,
     p_reason: reason,
+    p_pin: pin || null,
+  });
+
+// ---------- manager board editing ----------
+
+export const updateTile = (
+  supabase: SupabaseClient,
+  gameId: string,
+  position: number,
+  patch: TilePatch,
+  pin: string,
+) =>
+  rpc<TileRow>(supabase, "update_tile", {
+    p_game_id: gameId,
+    p_position: position,
+    p_patch: patch,
+    p_pin: pin || null,
+  });
+
+export const applyBoardTemplate = (
+  supabase: SupabaseClient,
+  gameId: string,
+  tiles: Tile[],
+  preset: string,
+  pin: string,
+) =>
+  rpc<number>(supabase, "apply_board_template", {
+    p_game_id: gameId,
+    p_tiles: tiles,
+    p_preset: preset,
+    p_pin: pin || null,
+  });
+
+export const replaceEventDeck = (
+  supabase: SupabaseClient,
+  gameId: string,
+  cards: StarterCard[],
+  pin: string,
+) =>
+  rpc<number>(supabase, "replace_event_deck", {
+    p_game_id: gameId,
+    p_cards: cards,
+    p_pin: pin || null,
+  });
+
+export const upsertEventCard = (
+  supabase: SupabaseClient,
+  gameId: string,
+  card: Partial<EventCard> & { name: string },
+  pin: string,
+) =>
+  rpc<EventCardRow>(supabase, "upsert_event_card", {
+    p_game_id: gameId,
+    p_card_id: card.id ?? null,
+    p_card_name: card.name,
+    p_rule_text: card.ruleText ?? null,
+    p_movement_effect: card.movementEffect ?? 0,
+    p_tile_position: card.tilePosition ?? null,
+    p_weight: card.weight ?? 1,
+    p_pin: pin || null,
+  });
+
+export const deleteEventCard = (
+  supabase: SupabaseClient,
+  gameId: string,
+  cardId: string,
+  pin: string,
+) =>
+  rpc<boolean>(supabase, "delete_event_card", {
+    p_game_id: gameId,
+    p_card_id: cardId,
     p_pin: pin || null,
   });
 

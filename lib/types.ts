@@ -1,16 +1,16 @@
 // Core domain types shared by the board engine, UI, and Supabase rows.
-// v0.3 "Monthly Marathon": movement is quest-based — every tile carries a
-// manager-configured goal, and completing it (with manager verification)
-// moves the player by the tile's move value.
+// v0.4: every tile is a manager-editable object — its own kind, name, rule
+// text, movement effect, optional target drink, and a checkpoint flag that
+// acts as a floor no automatic setback can push a player below.
 
-export type TileType =
-  | "start"
-  | "progress"
-  | "challenge"
+/** What a tile is, in the manager's vocabulary. */
+export type TileKind =
+  | "standard"
+  | "goal"
   | "setback"
-  | "bonus"
+  | "event_card"
   | "checkpoint"
-  | "finish";
+  | "boss";
 
 export type GoalType = "volume" | "upsell" | "task";
 
@@ -18,21 +18,49 @@ export interface TileGoal {
   type: GoalType;
   /** What the bartender reads, e.g. "Sell 10 Espresso Martinis". */
   label: string;
-  /** Numeric target; 1 for boolean tasks. */
+  /** Numeric target; 1 for one-off jobs. */
   target: number;
 }
 
 export interface Tile {
   position: number;
-  type: TileType;
-  title: string;
-  description?: string;
-  /** Landing effect: +n skip ahead, -n move back (never chains). */
-  move?: number;
-  /** The quest that must be completed (and verified) to leave this tile. */
+  kind: TileKind;
+  /** Manager-defined label, e.g. "Dirty Well Penalty". */
+  name: string;
+  /** What happens / what they must do when they land here. */
+  ruleText?: string;
+  /** Tiles moved on LANDING here: -2 back two, +3 ahead three, 0 neutral. */
+  movementEffect: number;
+  /** Safe zone: automatic setbacks can never push a player below this tile. */
+  isCheckpoint: boolean;
+  /** Optional link to a drink on the house menu (lib/recipes.ts). */
+  targetDrinkId?: string;
+  /** The goal that must be cleared (and signed off) to leave this tile. */
   goal: TileGoal;
-  /** Tiles moved forward when the quest is approved: 1 standard, 2-3 hard/boss. */
+  /** Tiles gained when this tile's goal is signed off. */
   moveValue: number;
+}
+
+/** A card in the manager's deck, drawn when a player lands on a card tile. */
+export interface EventCard {
+  id: string;
+  /** Undefined = general deck, drawable from any card tile. */
+  tilePosition?: number;
+  name: string;
+  ruleText?: string;
+  movementEffect: number;
+  /** Relative draw likelihood, 1–10. */
+  weight: number;
+}
+
+export interface CardDraw {
+  id: string;
+  playerId: string;
+  cardName: string;
+  ruleText?: string;
+  movementEffect: number;
+  tilePosition: number;
+  drawnAt: string;
 }
 
 export type GameStatus = "lobby" | "active" | "paused" | "finished";
@@ -43,10 +71,12 @@ export interface Player {
   profileId?: string;
   name: string;
   token: string; // emoji game piece
-  position: number; // tile index = which quest is active
-  /** Self-reported progress toward the current tile's goal target. */
+  position: number; // tile index = which goal is live
+  /** Self-reported count toward the current tile's target. */
   progress: number;
-  /** True while a quest submission is pending manager review. */
+  /** Furthest checkpoint reached — automatic setbacks stop here. */
+  checkpointFloor: number;
+  /** True while a count is waiting on manager sign-off. */
   awaitingApproval: boolean;
   finished: boolean;
 }
@@ -73,17 +103,38 @@ export interface Game {
   name: string;
   status: GameStatus;
   boardLength: number;
-  /** Manager toggle: approve non-winning quests automatically on submit. */
+  /** Manager toggle: sign off non-winning counts automatically. */
   autoApprove: boolean;
   campaignPreset?: string;
   tiles: Tile[];
   players: Player[];
+  cards: EventCard[];
   winnerId?: string;
 }
 
-/** A human-readable thing that just happened, for toasts / the event ticker. */
+/** A human-readable thing that just happened, for the chalk ticker. */
 export interface BoardEvent {
   playerId: string;
   message: string;
-  kind: "advance" | "bonus" | "setback" | "checkpoint" | "win" | "override" | "join";
+  kind:
+    | "advance"
+    | "bonus"
+    | "setback"
+    | "checkpoint"
+    | "card"
+    | "win"
+    | "override"
+    | "join";
+}
+
+/** Patch shape the tile editor sends; only present keys change. */
+export interface TilePatch {
+  kind?: TileKind;
+  name?: string;
+  ruleText?: string;
+  movementEffect?: number;
+  isCheckpoint?: boolean;
+  targetDrinkId?: string;
+  moveValue?: number;
+  goal?: Partial<TileGoal>;
 }

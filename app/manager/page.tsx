@@ -1,86 +1,25 @@
 "use client";
 
-// Campaign Preset Builder: pick a preset (or customize every tile's goal),
-// set the pace and trust level, and launch the Monthly Marathon.
+// Chalk up the board: name the month, pick a house style, set the pace and
+// the PIN. Tile-by-tile work happens in the Board Builder once it's open.
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown, ChevronUp, Dice5, Loader2, ShieldCheck } from "lucide-react";
-import { CAMPAIGN_PRESETS, generateCampaignBoard } from "@/lib/board";
-import {
-  byCategory,
-  CATEGORY_LABELS,
-  CATEGORY_QUEST_LABELS,
-  MENU,
-  sellQuestLabel,
-  type MenuCategory,
-} from "@/lib/recipes";
+import { ArrowLeft, Dice5, Loader2, ShieldCheck } from "lucide-react";
+import { BOARD_TEMPLATES, generateCampaignBoard, templateDeck } from "@/lib/board";
 import { isDemoMode } from "@/lib/supabase/client";
 import { createCampaignLive } from "@/lib/supabase/db";
-import type { GoalType, Tile, TileGoal } from "@/lib/types";
-
-const CATEGORY_ORDER: MenuCategory[] = ["signature", "spritz", "classic", "non_alcoholic"];
-
-/** Per-tile customization layered over the generated preset board. */
-type TileEdit = Omit<Partial<Tile>, "goal"> & { goal?: Partial<TileGoal> };
-
-const GOAL_TYPES: Array<{ value: GoalType; label: string }> = [
-  { value: "volume", label: "Count" },
-  { value: "upsell", label: "Upsell" },
-  { value: "task", label: "Job" },
-];
 
 export default function ManagerSetup() {
   const router = useRouter();
   const [name, setName] = useState("Monthly Marathon");
   const [boardLength, setBoardLength] = useState(30);
-  const [preset, setPreset] = useState("balanced");
+  const [preset, setPreset] = useState("cocktail_focus");
   const [autoApprove, setAutoApprove] = useState(false);
   const [pin, setPin] = useState("");
-  const [seed] = useState(() => Math.floor(Math.random() * 2 ** 31));
-  const [edits, setEdits] = useState<Record<number, TileEdit>>({});
-  const [showTiles, setShowTiles] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Regenerating from (length, preset, seed) keeps the builder deterministic;
-  // per-tile edits are layered on top and survive preset/length tweaks where
-  // positions still exist.
-  const tiles = useMemo(() => {
-    const base = generateCampaignBoard(boardLength, preset, seed);
-    return base.map((t) => {
-      const e = edits[t.position];
-      return e ? { ...t, ...e, goal: { ...t.goal, ...e.goal } } : t;
-    });
-  }, [boardLength, preset, seed, edits]);
-
-  /** Build a "Sell N <drink>" goal from a menu pick (or a whole category). */
-  function applyMenuPick(position: number, target: number, value: string) {
-    if (value.startsWith("cat:")) {
-      const cat = value.slice(4) as MenuCategory;
-      editTile(position, { goal: { label: CATEGORY_QUEST_LABELS[cat](target), type: "volume" } });
-      return;
-    }
-    const recipe = MENU.find((r) => r.id === value);
-    if (recipe) {
-      editTile(position, { goal: { label: sellQuestLabel(recipe, target), type: "volume" } });
-    }
-  }
-
-  function editTile(position: number, patch: TileEdit) {
-    setEdits((prev) => {
-      const current = prev[position] ?? {};
-      return {
-        ...prev,
-        [position]: {
-          ...current,
-          ...patch,
-          goal: patch.goal ? { ...current.goal, ...patch.goal } : current.goal,
-        },
-      };
-    });
-  }
 
   async function createCampaign(e: React.FormEvent) {
     e.preventDefault();
@@ -91,7 +30,16 @@ export default function ManagerSetup() {
     setBusy(true);
     setError(null);
     try {
-      const gameId = await createCampaignLive({ name, boardLength, preset, autoApprove, pin, tiles });
+      const seed = Math.floor(Math.random() * 2 ** 31);
+      const gameId = await createCampaignLive({
+        name,
+        boardLength,
+        preset,
+        autoApprove,
+        pin,
+        tiles: generateCampaignBoard(boardLength, preset, seed),
+        cards: templateDeck(preset),
+      });
       try {
         sessionStorage.setItem("baropoly.manager-pin", pin);
       } catch {}
@@ -103,7 +51,7 @@ export default function ManagerSetup() {
   }
 
   const field =
-    "w-full rounded-xl border border-bar-600 bg-bar-800 px-3 py-3 text-cream-100 outline-none focus:border-brass-500";
+    "w-full rounded-md border-2 border-bar-600 bg-bar-950 px-3 py-3 text-cream-100 outline-none focus:border-brass-500";
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-6 px-6 py-6">
@@ -122,21 +70,21 @@ export default function ManagerSetup() {
 
         <div className="space-y-2">
           <span className="chalk text-xl text-cream-400">house style</span>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {CAMPAIGN_PRESETS.map((p) => (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {BOARD_TEMPLATES.map((t) => (
               <button
-                key={p.key}
+                key={t.key}
                 type="button"
-                onClick={() => setPreset(p.key)}
-                aria-pressed={preset === p.key}
+                onClick={() => setPreset(t.key)}
+                aria-pressed={preset === t.key}
                 className={`rounded-sm border-2 p-3 text-left transition-all ${
-                  preset === p.key
+                  preset === t.key
                     ? "slab -rotate-1 border-brass-400 bg-bar-800"
                     : "border-bar-600 bg-bar-800/60"
                 }`}
               >
-                <span className="display block text-2xl leading-none text-brass-400">{p.label}</span>
-                <span className="chalk text-lg leading-tight text-cream-400">{p.blurb}</span>
+                <span className="display block text-2xl leading-none text-brass-400">{t.label}</span>
+                <span className="chalk text-lg leading-tight text-cream-400">{t.blurb}</span>
               </button>
             ))}
           </div>
@@ -158,7 +106,7 @@ export default function ManagerSetup() {
           type="button"
           onClick={() => setAutoApprove((v) => !v)}
           aria-pressed={autoApprove}
-          className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors ${
+          className={`flex w-full items-center gap-3 rounded-sm border-2 p-3 text-left transition-colors ${
             autoApprove ? "border-mint-400 bg-mint-400/10" : "border-bar-600 bg-bar-800"
           }`}
         >
@@ -188,106 +136,10 @@ export default function ManagerSetup() {
           />
         </label>
 
-        {/* per-tile customization */}
-        <div className="rounded-xl border border-bar-600 bg-bar-800">
-          <button
-            type="button"
-            onClick={() => setShowTiles((v) => !v)}
-            className="display flex w-full items-center justify-between px-4 py-3 text-xl text-brass-400"
-          >
-            Rework the tiles, one by one ({boardLength})
-            {showTiles ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-          </button>
-          {showTiles && (
-            <ul className="max-h-96 space-y-2 overflow-y-auto border-t border-bar-600 p-3">
-              {tiles.map((t) => (
-                <li key={t.position} className="rounded-lg border border-bar-600 bg-bar-900 p-2">
-                  <div className="mb-1 flex items-center gap-2 text-xs text-cream-400">
-                    <span className="w-8 shrink-0">#{t.position + 1}</span>
-                    <span className="flex-1 truncate">{t.title}</span>
-                    {t.move ? (
-                      <span className={t.move > 0 ? "text-mint-400" : "text-danger-400"}>
-                        {t.move > 0 ? `skip ${t.move}` : `back ${-t.move}`}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <input
-                      value={t.goal.label}
-                      onChange={(e) => editTile(t.position, { goal: { label: e.target.value } })}
-                      aria-label={`Goal for tile ${t.position + 1}`}
-                      className="min-w-40 flex-1 rounded-lg border border-bar-600 bg-bar-800 px-2 py-1.5 text-sm text-cream-100 outline-none focus:border-brass-500"
-                    />
-                    <select
-                      value=""
-                      onChange={(e) => applyMenuPick(t.position, t.goal.target, e.target.value)}
-                      aria-label={`Pick a menu drink for tile ${t.position + 1}`}
-                      className="max-w-32 rounded-lg border border-brass-500/50 bg-bar-800 px-1.5 py-1.5 text-sm text-brass-400"
-                    >
-                      <option value="">From menu…</option>
-                      {CATEGORY_ORDER.map((cat) => (
-                        <optgroup key={cat} label={CATEGORY_LABELS[cat]}>
-                          {byCategory(cat).map((r) => (
-                            <option key={r.id} value={r.id}>
-                              {r.name}
-                            </option>
-                          ))}
-                        </optgroup>
-                      ))}
-                      <optgroup label="Whole category">
-                        {CATEGORY_ORDER.map((cat) => (
-                          <option key={`cat:${cat}`} value={`cat:${cat}`}>
-                            Any: {CATEGORY_LABELS[cat]}
-                          </option>
-                        ))}
-                      </optgroup>
-                    </select>
-                    <select
-                      value={t.goal.type}
-                      onChange={(e) =>
-                        editTile(t.position, { goal: { type: e.target.value as GoalType } })
-                      }
-                      aria-label={`Goal type for tile ${t.position + 1}`}
-                      className="rounded-lg border border-bar-600 bg-bar-800 px-1.5 py-1.5 text-sm text-cream-100"
-                    >
-                      {GOAL_TYPES.map((g) => (
-                        <option key={g.value} value={g.value}>
-                          {g.label}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      min={1}
-                      max={999}
-                      value={t.goal.target}
-                      onChange={(e) => {
-                        const target = Number(e.target.value) || 1;
-                        // Keep "Sell N …" labels in step with the target.
-                        const label = /^(Sell|Upsell) \d+ /.test(t.goal.label)
-                          ? t.goal.label.replace(/\d+/, String(target))
-                          : undefined;
-                        editTile(t.position, { goal: label ? { target, label } : { target } });
-                      }}
-                      aria-label={`Target for tile ${t.position + 1}`}
-                      className="w-16 rounded-lg border border-bar-600 bg-bar-800 px-2 py-1.5 text-sm text-cream-100"
-                    />
-                    <select
-                      value={t.moveValue}
-                      onChange={(e) => editTile(t.position, { moveValue: Number(e.target.value) })}
-                      aria-label={`Move value for tile ${t.position + 1}`}
-                      className="rounded-lg border border-bar-600 bg-bar-800 px-1.5 py-1.5 text-sm text-cream-100"
-                    >
-                      <option value={1}>+1 tile</option>
-                      <option value={2}>+2 tiles</option>
-                      <option value={3}>+3 tiles</option>
-                    </select>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <p className="chalk text-lg text-cream-400/80">
+          tile-by-tile work — setbacks, checkpoints, cards — is in the Board Builder once
+          the board&apos;s open.
+        </p>
 
         {error && <p className="text-sm text-danger-400">{error}</p>}
 

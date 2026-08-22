@@ -101,7 +101,7 @@ export default function QuestCard({ game, player, onBumpProgress, onSubmit }: Qu
         </p>
         <div className="mt-1.5 border-t-4 border-double border-ink-900/50" />
         <p className="ticket mt-2 text-[10px] text-ink-900/60">
-          Tile {player.position + 1} — {tile.title}
+          Tile {player.position + 1} — {tile.name}
           {tile.moveValue > 1 && <span className="font-bold"> · worth {tile.moveValue} tiles</span>}
         </p>
         <h2 data-testid="goal-label" className="display mt-1 text-4xl leading-[0.95] text-ink-900">
