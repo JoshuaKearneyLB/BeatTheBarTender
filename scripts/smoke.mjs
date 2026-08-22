@@ -86,6 +86,9 @@ try {
   await page.goto(BASE + "/manager");
   await page.waitForSelector("text=Chalk up the board");
   await page.waitForSelector("text=Chaos Shift"); // board templates rendered
+  // Managers must be able to set the prize at setup, not just inherit defaults
+  await page.waitForSelector('input[aria-label="Prize title"]');
+  await page.fill('input[aria-label="Prize title"]', "Winner: £250 + a Friday off");
   await page.click("text=Open the board");
   await page.waitForURL("**/manager/demo");
   await page.waitForSelector("text=Sign-off queue");

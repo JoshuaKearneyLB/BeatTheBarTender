@@ -203,7 +203,7 @@ export default function QuestCard({ game, player, onBumpProgress, onSubmit }: Qu
         onChange={(e) => setNote(e.target.value)}
         placeholder="Anything the manager should know?"
         maxLength={140}
-        className="w-full rounded-md border-2 border-bar-600 bg-bar-950 px-3 py-2.5 text-sm text-cream-100 outline-none placeholder:text-cream-400 focus:border-brass-500"
+        className="field w-full"
       />
       <button
         disabled={player.progress === 0}

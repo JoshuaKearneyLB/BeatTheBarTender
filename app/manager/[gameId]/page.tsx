@@ -138,7 +138,7 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
         </Link>
         <div className="flex items-center gap-2">
           {mode === "live" && (
-            <label className="ticket flex items-center gap-1 border border-bar-600 bg-bar-800 px-2 py-1">
+            <label className="ticket flex items-center gap-1 border-2 border-bar-600 bg-black px-2 py-1">
               <KeyRound className="size-3.5 text-brass-400" />
               <input
                 type="password"
@@ -170,11 +170,7 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
             key={key}
             onClick={() => setTab(key)}
             aria-pressed={tab === key}
-            className={`display -mb-0.5 border-b-4 px-3 py-2 text-xl transition-colors ${
-              tab === key
-                ? "border-brass-400 text-brass-400"
-                : "border-transparent text-cream-400"
-            }`}
+            className={`tab display px-3 py-1.5 text-xl ${tab === key ? "tab-on" : ""}`}
           >
             {label}
           </button>
@@ -279,7 +275,7 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
         {game.players.map((p) => (
           <div
             key={p.id}
-            className="flex items-center gap-3 border-2 border-bar-600 bg-bar-800 px-3 py-2"
+            className="flex items-center gap-3 border-2 border-bar-600 bg-black px-3 py-2 shadow-[3px_3px_0_rgba(0,0,0,0.85)]"
           >
             <span className="text-2xl">{p.token}</span>
             <div className="flex-1">
@@ -301,14 +297,14 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
               <button
                 aria-label={`Bump ${p.name} up`}
                 onClick={() => override(p.id, 1, "earned it, seen it myself", pin)}
-                className="pos-key border-2 border-bar-600 p-2 text-mint-400"
+                className="pos-key border-2 border-bar-600 bg-bar-900 p-2 text-mint-400"
               >
                 <ChevronUp className="size-4" />
               </button>
               <button
                 aria-label={`Knock ${p.name} back`}
                 onClick={() => override(p.id, -2, "caught slacking on fruit prep", pin)}
-                className="pos-key border-2 border-bar-600 p-2 text-danger-400"
+                className="pos-key border-2 border-bar-600 bg-bar-900 p-2 text-danger-400"
               >
                 <ChevronDown className="size-4" />
               </button>

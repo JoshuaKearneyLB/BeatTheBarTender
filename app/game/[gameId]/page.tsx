@@ -103,7 +103,7 @@ export default function GamePage({ params }: { params: Promise<{ gameId: string 
               ],
             }}
             transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-            className="rounded border-2 border-brass-400/60 bg-brass-500/15 p-1.5 text-brass-400"
+            className="pos-key border-2 border-brass-400 bg-brass-500/20 p-1.5 text-brass-400"
           >
             <Trophy className="size-5" />
           </motion.button>
@@ -125,9 +125,7 @@ export default function GamePage({ params }: { params: Promise<{ gameId: string 
             key={key}
             onClick={() => pickView(key)}
             aria-pressed={view === key}
-            className={`display -mb-0.5 border-b-4 px-3 py-1.5 text-lg transition-colors ${
-              view === key ? "border-brass-400 text-brass-400" : "border-transparent text-cream-400"
-            }`}
+            className={`tab display px-3 py-1.5 text-lg ${view === key ? "tab-on" : ""}`}
           >
             {label}
           </button>

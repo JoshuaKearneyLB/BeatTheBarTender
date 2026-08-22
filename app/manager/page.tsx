@@ -62,8 +62,7 @@ export default function ManagerSetup() {
     }
   }
 
-  const field =
-    "w-full rounded-md border-2 border-bar-600 bg-bar-950 px-3 py-3 text-cream-100 outline-none focus:border-brass-500";
+  const field = "field w-full";
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-6 px-6 py-6">
@@ -89,10 +88,10 @@ export default function ManagerSetup() {
                 type="button"
                 onClick={() => setPreset(t.key)}
                 aria-pressed={preset === t.key}
-                className={`rounded-sm border-2 p-3 text-left transition-all ${
+                className={`pos-key border-2 p-3 text-left ${
                   preset === t.key
-                    ? "slab -rotate-1 border-brass-400 bg-bar-800"
-                    : "border-bar-600 bg-bar-800/60"
+                    ? "border-brass-400 bg-brass-500/15"
+                    : "border-bar-600 bg-bar-900"
                 }`}
               >
                 <span className="display block text-2xl leading-none text-brass-400">{t.label}</span>
@@ -118,8 +117,8 @@ export default function ManagerSetup() {
           type="button"
           onClick={() => setAutoApprove((v) => !v)}
           aria-pressed={autoApprove}
-          className={`flex w-full items-center gap-3 rounded-sm border-2 p-3 text-left transition-colors ${
-            autoApprove ? "border-mint-400 bg-mint-400/10" : "border-bar-600 bg-bar-800"
+          className={`pos-key flex w-full items-center gap-3 border-2 p-3 text-left ${
+            autoApprove ? "border-mint-400 bg-mint-400/15" : "border-bar-600 bg-bar-900"
           }`}
         >
           <ShieldCheck className={`size-5 ${autoApprove ? "text-mint-400" : "text-cream-400"}`} />
@@ -134,6 +133,56 @@ export default function ManagerSetup() {
             </span>
           </span>
         </button>
+
+        {/* the prize */}
+        <div className="space-y-2">
+          <span className="chalk flex items-center gap-2 text-xl text-cream-400">
+            <Trophy className="size-4 text-brass-400" /> what are they playing for?
+          </span>
+          <div className="panel">
+            <div className="panel-head">
+              <span>On the wall</span>
+              <span>the crew see this</span>
+            </div>
+            <div className="space-y-2 p-3">
+              <div className="flex gap-2">
+                <input
+                  value={prizeBadge}
+                  onChange={(e) => setPrizeBadge(e.target.value.slice(0, 4))}
+                  aria-label="Prize badge"
+                  className="field w-16 shrink-0 text-center text-2xl"
+                />
+                <input
+                  value={prizeTitle}
+                  onChange={(e) => setPrizeTitle(e.target.value)}
+                  aria-label="Prize title"
+                  className="field w-full min-w-0 flex-1"
+                  required
+                />
+              </div>
+              <textarea
+                value={prizeDescription}
+                onChange={(e) => setPrizeDescription(e.target.value)}
+                rows={3}
+                aria-label="Prize description"
+                className="field w-full"
+              />
+              <label className="flex items-center gap-2">
+                <span className="ticket text-[10px] text-cream-400">runs for</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={campaignDays}
+                  onChange={(e) => setCampaignDays(Number(e.target.value) || 30)}
+                  aria-label="Campaign days"
+                  className="field w-20"
+                />
+                <span className="ticket text-[10px] text-cream-400">days</span>
+              </label>
+            </div>
+          </div>
+        </div>
 
         <label className="block space-y-1">
           <span className="chalk text-xl text-cream-400">manager PIN — sign-offs & bumps</span>

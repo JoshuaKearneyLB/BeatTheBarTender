@@ -56,12 +56,16 @@ export default function SquareBoard({ game, meId, events, stats }: SquareBoardPr
               aria-label={`Tile ${cell.position + 1}: ${tile.name}`}
               onClick={() => setOpenTile(tile)}
               style={{ gridRow: cell.row, gridColumn: cell.col }}
-              className={`relative flex aspect-square flex-col justify-between border bg-bar-900/70 p-[3px] text-left ${chalk.border} ${
-                cell.corner ? "border-2 bg-bar-800" : ""
-              } ${mine ? "ring-1 ring-brass-400 ring-offset-0" : ""}`}
+              className={`relative flex aspect-square flex-col justify-between border-2 border-bar-600 bg-black p-[3px] text-left shadow-[2px_2px_0_rgba(0,0,0,0.9)] ${
+                cell.corner ? "border-[3px] border-brass-400/70 bg-bar-900" : ""
+              } ${mine ? "outline outline-2 outline-brass-400" : ""}`}
             >
-              <span className={`ticket flex items-start justify-between text-[7px] leading-none ${chalk.text}`}>
-                <span>{cell.position + 1}</span>
+              <span
+                aria-hidden
+                className={`absolute inset-x-0 top-0 h-[3px] ${chalk.bar}`}
+              />
+              <span className={`numerals flex items-start justify-between pt-[3px] text-[8px] leading-none ${chalk.text}`}>
+                <span className="text-cream-100">{String(cell.position + 1).padStart(2, "0")}</span>
                 <span className="flex items-center gap-px">
                   {tile.isCheckpoint && <ShieldCheck className="size-2" />}
                   {isFinish && <Flag className="size-2" />}
@@ -83,15 +87,13 @@ export default function SquareBoard({ game, meId, events, stats }: SquareBoardPr
                     layoutId={`square-token-${p.id}`}
                     transition={{ type: "spring", stiffness: 240, damping: 24 }}
                     title={p.name}
-                    className={`text-[11px] leading-none ${
-                      p.id === meId ? "drop-shadow-[0_0_5px_#ffb92e]" : ""
-                    }`}
+                    className={`chip size-[15px] text-[9px] ${p.id === meId ? "chip-mine" : ""}`}
                   >
                     {p.token}
                   </motion.span>
                 ))}
                 {here.length > 3 && (
-                  <span className="ticket pl-0.5 text-[6px] text-cream-400">
+                  <span className="numerals pl-1 text-[7px] text-brass-400">
                     +{here.length - 3}
                   </span>
                 )}
@@ -105,37 +107,37 @@ export default function SquareBoard({ game, meId, events, stats }: SquareBoardPr
           style={{ gridRow: `2 / ${rows}`, gridColumn: `2 / ${cols}` }}
           className="flex flex-col justify-between gap-2 p-2"
         >
-          <div>
-            <p className="ticket text-[8px] text-cream-400">
-              {game.status === "finished" ? "shift over" : "on tonight"}
-            </p>
-            <h3 className="display text-xl leading-none text-brass-400">{game.name}</h3>
+          <div className="panel-head panel-head-dark">
+            <span className="truncate">{game.name}</span>
+            <span className="shrink-0">{game.status === "finished" ? "closed" : "live"}</span>
           </div>
 
           <div className="min-h-0 flex-1 overflow-hidden">
-            <EventTicker events={events} />
+            <EventTicker events={events} lines={3} />
           </div>
 
-          <dl className="grid grid-cols-3 gap-1 border-t-2 border-dashed border-cream-100/20 pt-1.5">
-            <div>
+          <dl className="grid grid-cols-3 border-2 border-bar-600 bg-black">
+            <div className="border-r-2 border-bar-600 px-1.5 py-1">
               <dt className="ticket text-[7px] text-cream-400">Leader</dt>
-              <dd className="display truncate text-sm leading-tight text-cream-100">
+              <dd className="display truncate text-base leading-none text-brass-400">
                 {stats.leaderName}
               </dd>
-              <dd className="ticket text-[7px] text-cream-400">tile {stats.leaderTile}</dd>
+              <dd className="numerals text-[8px] text-cream-400">
+                TILE {String(stats.leaderTile).padStart(2, "0")}
+              </dd>
             </div>
-            <div>
+            <div className="border-r-2 border-bar-600 px-1.5 py-1">
               <dt className="ticket text-[7px] text-cream-400">Days left</dt>
               <dd
                 data-testid="days-left"
-                className={`display text-sm leading-tight ${stats.daysLeft <= 3 ? "text-danger-400" : "text-cream-100"}`}
+                className={`numerals text-lg leading-none ${stats.daysLeft <= 3 ? "text-danger-400" : "text-cream-100"}`}
               >
                 {stats.daysLeft}
               </dd>
             </div>
-            <div>
+            <div className="px-1.5 py-1">
               <dt className="ticket text-[7px] text-cream-400">Rung in</dt>
-              <dd className="display text-sm leading-tight text-cream-100">{stats.drinksSold}</dd>
+              <dd className="numerals text-lg leading-none text-cream-100">{stats.drinksSold}</dd>
               <dd className="ticket text-[7px] text-cream-400">drinks</dd>
             </div>
           </dl>
@@ -157,7 +159,7 @@ export default function SquareBoard({ game, meId, events, stats }: SquareBoardPr
               animate={{ y: 0 }}
               exit={{ y: 40 }}
               onClick={(e) => e.stopPropagation()}
-              className="slab w-full max-w-md space-y-2 border-t-4 border-brass-400 bg-bar-800 p-5"
+              className="panel w-full max-w-md space-y-2 border-t-4 border-t-brass-400 p-5"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>

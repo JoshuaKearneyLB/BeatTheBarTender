@@ -123,8 +123,7 @@ export default function BoardBuilder({
     }
   }
 
-  const field =
-    "w-full rounded-md border-2 border-bar-600 bg-bar-950 px-2.5 py-2 text-sm text-cream-100 outline-none focus:border-brass-500";
+  const field = "field w-full";
 
   return (
     <div className="space-y-6 pb-4">
@@ -136,20 +135,25 @@ export default function BoardBuilder({
         <p className="chalk text-lg text-cream-400">
           this is what the crew see behind the trophy on their board
         </p>
-        <div className="space-y-2 border-2 border-bar-600 bg-bar-800 p-3">
+        <div className="panel">
+          <div className="panel-head">
+            <span>On the wall</span>
+            <span>the crew see this</span>
+          </div>
+          <div className="space-y-2 p-3">
           <div className="flex gap-2">
             <input
               value={prize.badge}
               onChange={(e) => setPrize({ ...prize, badge: e.target.value.slice(0, 4) })}
               aria-label="Prize badge"
-              className="w-14 rounded-md border-2 border-bar-600 bg-bar-950 px-2 py-2 text-center text-2xl"
+              className="field"
             />
             <input
               value={prize.title}
               onChange={(e) => setPrize({ ...prize, title: e.target.value })}
               placeholder="Monthly Winner: £250 Cash + Weekend Off"
               aria-label="Prize title"
-              className={`flex-1 ${field}`}
+              className="field w-full min-w-0 flex-1"
             />
           </div>
           <textarea
@@ -173,7 +177,7 @@ export default function BoardBuilder({
                     setPrize({ ...prize, campaignDays: Number(e.target.value) || 30 })
                   }
                   aria-label="Campaign days"
-                  className="w-20 rounded-md border-2 border-bar-600 bg-bar-950 px-2 py-2 text-sm text-cream-100"
+                  className="field"
                 />
                 <span className="chalk text-lg text-cream-400">days</span>
               </div>
@@ -190,6 +194,7 @@ export default function BoardBuilder({
               <Check className="size-4" /> {prizeSaved ? "Pinned up" : "Save prize"}
             </button>
           </div>
+          </div>
         </div>
       </section>
 
@@ -204,10 +209,10 @@ export default function BoardBuilder({
             <button
               key={t.key}
               onClick={() => setConfirmTemplate(t.key)}
-              className={`rounded-sm border-2 p-3 text-left transition-all ${
+              className={`pos-key border-2 p-3 text-left ${
                 game.campaignPreset === t.key
-                  ? "slab -rotate-1 border-brass-400 bg-bar-800"
-                  : "border-bar-600 bg-bar-800/60"
+                  ? "border-brass-400 bg-brass-500/15"
+                  : "border-bar-600 bg-bar-900"
               }`}
             >
               <span className="display block text-xl leading-none text-brass-400">{t.label}</span>
@@ -227,10 +232,10 @@ export default function BoardBuilder({
               key={tile.position}
               data-testid={`builder-tile-${tile.position}`}
               onClick={() => openTile(tile)}
-              className={`flex h-[4.6rem] flex-col justify-between border-2 bg-bar-800 p-1 text-left ${tileTone(tile)}`}
+              className={`flex h-[4.6rem] flex-col justify-between border-2 bg-black p-1 text-left shadow-[2px_2px_0_rgba(0,0,0,0.9)] ${tileTone(tile)}`}
             >
-              <span className="ticket flex items-center justify-between text-[9px]">
-                <span>{tile.position + 1}</span>
+              <span className="numerals flex items-center justify-between text-[10px]">
+                <span className="text-cream-100">{String(tile.position + 1).padStart(2, "0")}</span>
                 <span className="flex items-center gap-0.5">
                   {tile.isCheckpoint && <ShieldCheck className="size-2.5" />}
                   {tile.kind === "event_card" && "?"}
@@ -240,7 +245,7 @@ export default function BoardBuilder({
               <span className="chalk line-clamp-2 text-[13px] leading-[1.05] text-cream-100">
                 {tile.name}
               </span>
-              <span className="ticket text-[9px]">
+              <span className="numerals text-[10px]">
                 {tile.movementEffect !== 0
                   ? `${tile.movementEffect > 0 ? "+" : ""}${tile.movementEffect}`
                   : ""}
@@ -272,7 +277,7 @@ export default function BoardBuilder({
           {game.cards.map((card) => (
             <li
               key={card.id}
-              className="flex items-center gap-2 border-2 border-bar-600 bg-bar-800 px-3 py-2"
+              className="flex items-center gap-2 border-2 border-bar-600 bg-black px-3 py-2 shadow-[3px_3px_0_rgba(0,0,0,0.85)]"
             >
               <button onClick={() => setCardDraft(card)} className="min-w-0 flex-1 text-left">
                 <span className="display block text-lg leading-none text-cream-100">
@@ -283,18 +288,18 @@ export default function BoardBuilder({
                 </span>
               </button>
               <span
-                className={`ticket text-xs ${card.movementEffect < 0 ? "text-danger-400" : "text-mint-400"}`}
+                className={`numerals text-sm ${card.movementEffect < 0 ? "text-danger-400" : "text-mint-400"}`}
               >
                 {card.movementEffect > 0 ? "+" : ""}
                 {card.movementEffect}
               </span>
-              <span className="ticket text-[10px] text-cream-400">
-                {card.tilePosition == null ? "deck" : `t${card.tilePosition + 1}`} ·w{card.weight}
+              <span className="numerals text-[10px] text-cream-400">
+                {card.tilePosition == null ? "DECK" : `T${card.tilePosition + 1}`} ·W{card.weight}
               </span>
               <button
                 aria-label={`Delete ${card.name}`}
                 onClick={() => onDeleteCard(card.id, pin)}
-                className="rounded border border-bar-600 p-1.5 text-danger-400"
+                className="pos-key border-2 border-bar-600 bg-bar-900 p-1.5 text-danger-400"
               >
                 <Trash2 className="size-3.5" />
               </button>
@@ -312,7 +317,7 @@ export default function BoardBuilder({
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-40 flex items-center justify-center bg-bar-950/80 p-6"
           >
-            <div className="slab w-full max-w-sm border-2 border-brass-400 bg-bar-800 p-5">
+            <div className="panel w-full max-w-sm border-brass-400 p-5">
               <h3 className="display text-2xl text-brass-400">Replace the whole board?</h3>
               <p className="chalk mt-1 text-lg text-cream-400">
                 every tile and the deck get rewritten. crew keep their places.
@@ -352,7 +357,7 @@ export default function BoardBuilder({
               initial={{ y: 40 }}
               animate={{ y: 0 }}
               exit={{ y: 40 }}
-              className="slab w-full max-w-md space-y-3 border-2 border-bar-600 bg-bar-800 p-5"
+              className="panel w-full max-w-md space-y-3 p-5"
             >
               <h3 className="display text-2xl text-brass-400">
                 {cardDraft.id ? "Edit card" : "New card"}
@@ -458,7 +463,7 @@ export default function BoardBuilder({
               animate={{ y: 0 }}
               exit={{ y: 60 }}
               transition={{ type: "spring", stiffness: 320, damping: 32 }}
-              className="max-h-[88dvh] w-full max-w-2xl space-y-3 overflow-y-auto border-t-4 border-brass-400 bg-bar-800 p-5"
+              className="panel max-h-[88dvh] w-full max-w-2xl space-y-3 overflow-y-auto border-t-4 border-t-brass-400 p-5"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -471,7 +476,7 @@ export default function BoardBuilder({
                     setDraft(null);
                     setEditing(null);
                   }}
-                  className="rounded border-2 border-bar-600 p-1.5 text-cream-400"
+                  className="pos-key border-2 border-bar-600 bg-bar-900 p-1.5 text-cream-400"
                 >
                   <X className="size-4" />
                 </button>
@@ -495,9 +500,9 @@ export default function BoardBuilder({
                       key={k.value}
                       onClick={() => patchDraft({ kind: k.value })}
                       aria-pressed={draft.kind === k.value}
-                      className={`display border-2 px-2.5 py-1 text-lg transition-colors ${
+                      className={`pos-key display border-2 px-2.5 py-1 text-lg ${
                         draft.kind === k.value
-                          ? "border-brass-400 bg-brass-500/20 text-brass-400"
+                          ? "border-brass-400 bg-brass-500/25 text-brass-400"
                           : "border-bar-600 bg-bar-900 text-cream-400"
                       }`}
                     >
@@ -522,7 +527,7 @@ export default function BoardBuilder({
                   value=""
                   onChange={(e) => pickDrink(e.target.value)}
                   aria-label="Pick a menu drink"
-                  className="max-w-40 rounded-md border-2 border-brass-500/50 bg-bar-950 px-2 py-2 text-sm text-brass-400"
+                  className="field"
                 >
                   <option value="">From menu…</option>
                   {CATEGORY_ORDER.map((cat) => (
@@ -548,7 +553,7 @@ export default function BoardBuilder({
                     patchDraft({ goal: { ...draft.goal, type: e.target.value as GoalType } })
                   }
                   aria-label="Goal type"
-                  className="rounded-md border-2 border-bar-600 bg-bar-950 px-2 py-2 text-sm text-cream-100"
+                  className="field"
                 >
                   {GOAL_TYPES.map((g) => (
                     <option key={g.value} value={g.value}>
@@ -569,7 +574,7 @@ export default function BoardBuilder({
                     patchDraft({ goal: { ...draft.goal, target, label } });
                   }}
                   aria-label="Goal target"
-                  className="w-20 rounded-md border-2 border-bar-600 bg-bar-950 px-2 py-2 text-sm text-cream-100"
+                  className="field"
                 />
               </div>
 
@@ -580,7 +585,7 @@ export default function BoardBuilder({
                     value={draft.moveValue}
                     onChange={(e) => patchDraft({ moveValue: Number(e.target.value) })}
                     aria-label="Move value"
-                    className="block rounded-md border-2 border-bar-600 bg-bar-950 px-2 py-2 text-sm text-cream-100"
+                    className="field"
                   >
                     <option value={1}>1 tile</option>
                     <option value={2}>2 tiles</option>
@@ -597,7 +602,7 @@ export default function BoardBuilder({
                     onChange={(e) => patchDraft({ movementEffect: Number(e.target.value) })}
                     aria-label="Movement effect"
                     data-testid="tile-movement-effect"
-                    className="block w-24 rounded-md border-2 border-bar-600 bg-bar-950 px-2 py-2 text-sm text-cream-100"
+                    className="field block w-24"
                   />
                 </label>
               </div>
@@ -605,8 +610,8 @@ export default function BoardBuilder({
               <button
                 onClick={() => patchDraft({ isCheckpoint: !draft.isCheckpoint })}
                 aria-pressed={draft.isCheckpoint}
-                className={`flex w-full items-center gap-3 rounded-sm border-2 p-3 text-left transition-colors ${
-                  draft.isCheckpoint ? "border-mint-400 bg-mint-400/10" : "border-bar-600 bg-bar-900"
+                className={`pos-key flex w-full items-center gap-3 border-2 p-3 text-left ${
+                  draft.isCheckpoint ? "border-mint-400 bg-mint-400/15" : "border-bar-600 bg-bar-900"
                 }`}
               >
                 <ShieldCheck

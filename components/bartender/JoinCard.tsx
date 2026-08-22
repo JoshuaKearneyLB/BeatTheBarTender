@@ -29,7 +29,7 @@ export default function JoinCard({
   }
 
   return (
-    <form onSubmit={submit} className="slab -rotate-1 space-y-4 rounded-sm bg-paper-100 p-5">
+    <form onSubmit={submit} className="slab -rotate-1 space-y-4 bg-paper-100 p-5">
       <div>
         <p className="ticket text-[10px] text-ink-900/50">staff rota</p>
         <h2 className="display mt-0.5 text-3xl leading-none text-ink-900">
@@ -52,10 +52,10 @@ export default function JoinCard({
             type="button"
             onClick={() => setToken(t)}
             aria-pressed={token === t}
-            className={`rounded-sm border-2 p-2 text-2xl transition-transform ${
+            className={`pos-key border-2 p-2 text-2xl ${
               token === t
-                ? "-rotate-3 border-ink-900 bg-brass-400/40"
-                : "border-ink-900/20 bg-transparent"
+                ? "border-ink-900 bg-brass-400/50"
+                : "border-ink-900/25 bg-transparent"
             }`}
           >
             {t}
