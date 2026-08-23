@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Flag, ShieldCheck, X } from "lucide-react";
 import { ringLayout } from "@/lib/board";
 import type { BoardEvent, Game, Tile } from "@/lib/types";
+import PixelToken from "@/components/PixelToken";
 import EventTicker from "./EventTicker";
 import { chalkFor } from "./tileChalk";
 
@@ -87,9 +88,9 @@ export default function SquareBoard({ game, meId, events, stats }: SquareBoardPr
                     layoutId={`square-token-${p.id}`}
                     transition={{ type: "spring", stiffness: 240, damping: 24 }}
                     title={p.name}
-                    className={`chip size-[15px] text-[9px] ${p.id === meId ? "chip-mine" : ""}`}
+                    className={`chip size-[16px] ${p.id === meId ? "chip-mine" : ""}`}
                   >
-                    {p.token}
+                    <PixelToken id={p.token} size={11} title={p.name} />
                   </motion.span>
                 ))}
                 {here.length > 3 && (
@@ -206,7 +207,9 @@ export default function SquareBoard({ game, meId, events, stats }: SquareBoardPr
                   <ul className="mt-1 space-y-0.5">
                     {standing(openTile.position).map((p) => (
                       <li key={p.id} className="flex items-center gap-2">
-                        <span className="text-lg">{p.token}</span>
+                        <span className="chip size-7">
+                          <PixelToken id={p.token} size={18} title={p.name} />
+                        </span>
                         <span className="display text-lg text-cream-100">{p.name}</span>
                         {p.awaitingApproval && (
                           <span className="chalk text-base text-brass-400">waiting on sign-off</span>

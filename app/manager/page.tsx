@@ -7,7 +7,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Dice5, Loader2, ShieldCheck, Trophy } from "lucide-react";
+import PixelToken from "@/components/PixelToken";
 import { BOARD_TEMPLATES, generateCampaignBoard, templateDeck } from "@/lib/board";
+import { DEFAULT_BADGE, PRIZE_BADGES } from "@/lib/tokens";
 import { isDemoMode } from "@/lib/supabase/client";
 import { createCampaignLive } from "@/lib/supabase/db";
 
@@ -22,7 +24,7 @@ export default function ManagerSetup() {
   const [prizeDescription, setPrizeDescription] = useState(
     "First past Last Call with a manager sign-off takes the cash and gets first pick of next month's shifts.",
   );
-  const [prizeBadge, setPrizeBadge] = useState("💷");
+  const [prizeBadge, setPrizeBadge] = useState(DEFAULT_BADGE);
   const [campaignDays, setCampaignDays] = useState(30);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,20 +147,33 @@ export default function ManagerSetup() {
               <span>the crew see this</span>
             </div>
             <div className="space-y-2 p-3">
-              <div className="flex gap-2">
-                <input
-                  value={prizeBadge}
-                  onChange={(e) => setPrizeBadge(e.target.value.slice(0, 4))}
-                  aria-label="Prize badge"
-                  className="field w-16 shrink-0 text-center text-2xl"
-                />
-                <input
-                  value={prizeTitle}
-                  onChange={(e) => setPrizeTitle(e.target.value)}
-                  aria-label="Prize title"
-                  className="field w-full min-w-0 flex-1"
-                  required
-                />
+              <input
+                value={prizeTitle}
+                onChange={(e) => setPrizeTitle(e.target.value)}
+                aria-label="Prize title"
+                className="field w-full"
+                required
+              />
+              <div className="space-y-1">
+                <span className="ticket text-[10px] text-cream-400">Badge</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {PRIZE_BADGES.map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => setPrizeBadge(b.id)}
+                      aria-pressed={prizeBadge === b.id}
+                      aria-label={b.name}
+                      className={`pos-key border-2 p-1.5 ${
+                        prizeBadge === b.id
+                          ? "border-brass-400 bg-brass-500/25"
+                          : "border-bar-600 bg-bar-900"
+                      }`}
+                    >
+                      <PixelToken id={b.id} pool={PRIZE_BADGES} size={22} />
+                    </button>
+                  ))}
+                </div>
               </div>
               <textarea
                 value={prizeDescription}

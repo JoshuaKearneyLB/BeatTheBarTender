@@ -7,6 +7,7 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import type { Game } from "@/lib/types";
+import PixelToken from "@/components/PixelToken";
 import { chalkFor } from "./tileChalk";
 
 
@@ -55,10 +56,10 @@ export default function BoardStrip({ game, meId }: { game: Game; meId?: string }
                       key={p.id}
                       layoutId={`token-${p.id}`}
                       transition={{ type: "spring", stiffness: 250, damping: 22 }}
-                      className={`text-lg leading-none ${p.id === meId ? "drop-shadow-[0_0_7px_#ffb92e]" : ""}`}
+                      className={`chip size-6 ${p.id === meId ? "chip-mine" : ""}`}
                       title={p.name}
                     >
-                      {p.token}
+                      <PixelToken id={p.token} size={16} title={p.name} />
                     </motion.span>
                   ))}
                 </div>

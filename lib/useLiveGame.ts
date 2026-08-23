@@ -95,7 +95,7 @@ function diffPlayerEvents(prev: Player | undefined, next: Player, game: Game): B
     events.push({
       playerId: next.id,
       kind: "win",
-      message: `🏆 ${next.name} rang Last Call. Drinks are on them.`,
+      message: `*** ${next.name} rang Last Call — drinks are on them ***`,
     });
   }
   return events;
@@ -165,7 +165,7 @@ export function useLiveGame(gameId: string, enabled: boolean): GameApi {
   const warn = useCallback((message: string) => {
     setState((s) => ({
       ...s,
-      events: pushEvents(s.events, [{ playerId: "", kind: "setback", message: `⚠️ ${message}` }]),
+      events: pushEvents(s.events, [{ playerId: "", kind: "setback", message: `!! ${message}` }]),
     }));
   }, []);
 

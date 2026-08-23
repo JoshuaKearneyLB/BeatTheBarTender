@@ -4,8 +4,10 @@
 
 import { useState } from "react";
 import { LogIn } from "lucide-react";
+import PixelToken from "@/components/PixelToken";
+import { DEFAULT_TOKEN, PLAYER_TOKENS } from "@/lib/tokens";
 
-const TOKENS = ["🦊", "🐙", "🦉", "🐺", "🐝", "🦁", "🐸", "🦄"];
+
 
 export default function JoinCard({
   gameName,
@@ -15,7 +17,7 @@ export default function JoinCard({
   onJoin: (name: string, token: string) => Promise<void>;
 }) {
   const [name, setName] = useState("");
-  const [token, setToken] = useState(TOKENS[0]);
+  const [token, setToken] = useState(DEFAULT_TOKEN);
   const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {
@@ -45,20 +47,23 @@ export default function JoinCard({
         maxLength={24}
         className="chalk w-full border-b-2 border-ink-900/40 bg-transparent px-1 py-2 text-2xl text-ink-900 outline-none placeholder:text-ink-900/40 focus:border-ink-900"
       />
-      <div className="flex flex-wrap gap-2">
-        {TOKENS.map((t) => (
+      <div className="grid grid-cols-4 gap-2">
+        {PLAYER_TOKENS.map((t) => (
           <button
-            key={t}
+            key={t.id}
             type="button"
-            onClick={() => setToken(t)}
-            aria-pressed={token === t}
-            className={`pos-key border-2 p-2 text-2xl ${
-              token === t
+            onClick={() => setToken(t.id)}
+            aria-pressed={token === t.id}
+            aria-label={t.name}
+            data-testid={`token-${t.id}`}
+            className={`pos-key flex flex-col items-center gap-1 border-2 py-2 ${
+              token === t.id
                 ? "border-ink-900 bg-brass-400/50"
-                : "border-ink-900/25 bg-transparent"
+                : "border-ink-900/25 bg-ink-900/5"
             }`}
           >
-            {t}
+            <PixelToken id={t.id} size={26} />
+            <span className="ticket text-[8px] text-ink-900/70">{t.name}</span>
           </button>
         ))}
       </div>

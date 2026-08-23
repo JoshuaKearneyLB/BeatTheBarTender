@@ -385,7 +385,7 @@ export function applyQuestApproval(
     events.push({
       playerId: p.id,
       kind: "win",
-      message: `🏆 ${p.name} rang Last Call. Drinks are on them.`,
+      message: `*** ${p.name} rang Last Call — drinks are on them ***`,
     });
     return { player: p, events };
   }

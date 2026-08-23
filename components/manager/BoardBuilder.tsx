@@ -18,6 +18,8 @@ import {
   sellQuestLabel,
   type MenuCategory,
 } from "@/lib/recipes";
+import PixelToken from "@/components/PixelToken";
+import { PRIZE_BADGES } from "@/lib/tokens";
 import type { EventCard, Game, GoalType, Prize, Tile, TileKind, TilePatch } from "@/lib/types";
 
 const CATEGORY_ORDER: MenuCategory[] = ["signature", "spritz", "classic", "non_alcoholic"];
@@ -141,20 +143,34 @@ export default function BoardBuilder({
             <span>the crew see this</span>
           </div>
           <div className="space-y-2 p-3">
-          <div className="flex gap-2">
-            <input
-              value={prize.badge}
-              onChange={(e) => setPrize({ ...prize, badge: e.target.value.slice(0, 4) })}
-              aria-label="Prize badge"
-              className="field"
-            />
-            <input
-              value={prize.title}
+          <input
+            value={prize.title}
               onChange={(e) => setPrize({ ...prize, title: e.target.value })}
-              placeholder="Monthly Winner: £250 Cash + Weekend Off"
-              aria-label="Prize title"
-              className="field w-full min-w-0 flex-1"
-            />
+            placeholder="Monthly Winner: £250 Cash + Weekend Off"
+            aria-label="Prize title"
+            className="field w-full"
+          />
+          <div className="space-y-1">
+            <span className="ticket text-[10px] text-cream-400">Badge</span>
+            <div className="flex flex-wrap gap-1.5">
+              {PRIZE_BADGES.map((b) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => setPrize({ ...prize, badge: b.id })}
+                  aria-pressed={prize.badge === b.id}
+                  aria-label={b.name}
+                  data-testid={`badge-${b.id}`}
+                  className={`pos-key border-2 p-1.5 ${
+                    prize.badge === b.id
+                      ? "border-brass-400 bg-brass-500/25"
+                      : "border-bar-600 bg-bar-900"
+                  }`}
+                >
+                  <PixelToken id={b.id} pool={PRIZE_BADGES} size={22} />
+                </button>
+              ))}
+            </div>
           </div>
           <textarea
             value={prize.description ?? ""}

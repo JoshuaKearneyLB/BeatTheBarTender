@@ -47,16 +47,16 @@ function seedState(id: string): State {
       title: "Monthly Winner: £250 Cash + Weekend Off",
       description:
         "First past Last Call with a manager sign-off takes the £250 and gets first pick of next month's shifts. Under-counts get binned — snap the till.",
-      badge: "💷",
+      badge: "cash",
     },
     campaignDays: 30,
     startedAt: new Date(Date.now() - 11 * 86_400_000).toISOString(),
     tiles: generateCampaignBoard(boardLength, preset, 42),
     cards: seedCards(preset),
     players: [
-      { id: "p1", name: "You", token: "🦊", position: 0, progress: 0, checkpointFloor: 0, awaitingApproval: false, finished: false },
-      { id: "p2", name: "Marco", token: "🐙", position: 2, progress: 0, checkpointFloor: 0, awaitingApproval: true, finished: false },
-      { id: "p3", name: "Dee", token: "🦉", position: 1, progress: 3, checkpointFloor: 0, awaitingApproval: false, finished: false },
+      { id: "p1", name: "You", token: "martini", position: 0, progress: 0, checkpointFloor: 0, awaitingApproval: false, finished: false },
+      { id: "p2", name: "Marco", token: "flame", position: 2, progress: 0, checkpointFloor: 0, awaitingApproval: true, finished: false },
+      { id: "p3", name: "Dee", token: "lime", position: 1, progress: 3, checkpointFloor: 0, awaitingApproval: false, finished: false },
     ],
   };
   return {

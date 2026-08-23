@@ -18,6 +18,7 @@ import {
   WifiOff,
   X,
 } from "lucide-react";
+import PixelToken from "@/components/PixelToken";
 import BoardBuilder from "@/components/manager/BoardBuilder";
 import BoardStrip from "@/components/board/BoardStrip";
 import EventTicker from "@/components/board/EventTicker";
@@ -243,7 +244,9 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
                   aria-label={`Select count from ${player?.name}`}
                   className="size-4 accent-brass-500"
                 />
-                <span className="text-xl">{player?.token}</span>
+                <span className="chip size-7 shrink-0">
+                  <PixelToken id={player?.token} size={18} title={player?.name} />
+                </span>
                 <div className="min-w-0 flex-1 text-ink-900">
                   <p className="truncate text-sm">
                     <span className="display text-lg">{player?.name}</span>
@@ -277,7 +280,9 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
             key={p.id}
             className="flex items-center gap-3 border-2 border-bar-600 bg-black px-3 py-2 shadow-[3px_3px_0_rgba(0,0,0,0.85)]"
           >
-            <span className="text-2xl">{p.token}</span>
+            <span className="chip size-8 shrink-0">
+              <PixelToken id={p.token} size={20} title={p.name} />
+            </span>
             <div className="flex-1">
               <p className="display text-xl">
                 {p.name}
@@ -285,7 +290,7 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
                   <span className="chalk ml-2 text-base text-brass-400">← waiting on you</span>
                 )}
                 {p.finished && (
-                  <span className="chalk ml-2 text-base text-brass-400">rang last call 🏆</span>
+                  <span className="chalk ml-2 text-base text-brass-400">rang last call</span>
                 )}
               </p>
               <p className="text-xs text-cream-400">
@@ -327,7 +332,9 @@ export default function ManagerConsole({ params }: { params: Promise<{ gameId: s
                 key={s.id}
                 className="flex items-center gap-2 border-b border-dashed border-bar-600 px-1 py-2 text-sm"
               >
-                <span>{player?.token}</span>
+                <span className="chip size-6 shrink-0">
+                  <PixelToken id={player?.token} size={15} title={player?.name} />
+                </span>
                 <span className="min-w-0 flex-1 truncate text-cream-400">
                   {player?.name} · tile {s.tilePosition + 1} · said {s.claimedValue}
                 </span>

@@ -46,11 +46,17 @@ try {
   if (!counter.trim().startsWith("3")) throw new Error(`expected count 3, got "${counter}"`);
   await page.screenshot({ path: "/tmp/baropoly-bartender.png" });
 
+  // Player pieces are pixel sprites, not platform emoji
+  const boardSprites = await page.locator(".chip svg").count();
+  if (boardSprites < 1) throw new Error("no pixel tokens rendered on the board");
+
   // Trophy → prize modal → close
   await page.click('[data-testid="prize-trophy"]');
   await page.waitForSelector('[data-testid="prize-title"]');
   const prizeTitle = await page.locator('[data-testid="prize-title"]').innerText();
   if (!/£|cash|winner/i.test(prizeTitle)) throw new Error(`prize title looks wrong: "${prizeTitle}"`);
+  const badgeSprite = await page.locator('[role="dialog"] svg rect').count();
+  if (badgeSprite < 4) throw new Error("prize badge is not a pixel sprite");
   await page.waitForTimeout(600); // let the poster settle before the shot
   await page.screenshot({ path: "/tmp/baropoly-prize.png" });
   await page.click('[aria-label="Close the prize"]');
@@ -120,7 +126,10 @@ try {
   await page.waitForTimeout(500); // let the drawer finish closing
   await page.screenshot({ path: "/tmp/baropoly-builder.png" });
 
-  // Manager owns the prize too
+  // Manager owns the prize too — badge is a sprite picker, not a text field
+  const badgeKeys = await page.locator('[data-testid^="badge-"]').count();
+  if (badgeKeys !== 6) throw new Error(`badge picker shows ${badgeKeys} sprites, expected 6`);
+  await page.click('[data-testid="badge-medal"]');
   await page.fill('input[aria-label="Prize title"]', "Winner: £300 + a Friday off");
   await page.click('[data-testid="save-prize"]');
   await page.waitForSelector("text=Pinned up");

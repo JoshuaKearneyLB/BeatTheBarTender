@@ -5,6 +5,8 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+import PixelToken from "@/components/PixelToken";
+import { PRIZE_BADGES } from "@/lib/tokens";
 import type { Prize } from "@/lib/types";
 
 interface PrizeModalProps {
@@ -52,9 +54,9 @@ export default function PrizeModal({ prize, boardLength, open, onClose }: PrizeM
               <motion.div
                 animate={{ scale: [1, 1.07, 1] }}
                 transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-                className="mx-auto text-7xl drop-shadow-[0_0_26px_rgba(255,185,46,0.65)]"
+                className="mx-auto w-fit drop-shadow-[0_0_26px_rgba(255,185,46,0.65)]"
               >
-                {prize.badge}
+                <PixelToken id={prize.badge} pool={PRIZE_BADGES} size={88} />
               </motion.div>
 
               <h2
