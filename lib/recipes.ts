@@ -1,6 +1,5 @@
-// The venue's official cocktail menu — the single source of truth for quest
-// builder dropdowns, campaign preset goals, and (mirrored in
-// public/training/data/cocktails.js — keep in sync) the staff trivia game.
+// The venue's official cocktail menu — the single source of truth for both
+// games: the drink picker in the race, and the specs test's rounds.
 // Specs are verbatim from the house menu: measures, spirits, garnishes.
 
 export type MenuCategory = "signature" | "spritz" | "classic" | "non_alcoholic";
@@ -17,6 +16,12 @@ export interface Recipe {
   /** Exact build, measures included, in menu order. */
   ingredients: string[];
   garnish: string;
+  /**
+   * The same ingredients, ordered least-to-most revealing for the specs
+   * test: commodity mixers first, the giveaway branded spirit last, so the
+   * early lines stay ambiguous.
+   */
+  clues: string[];
 }
 
 export const MENU: Recipe[] = [
@@ -29,6 +34,11 @@ export const MENU: Recipe[] = [
     spirits: ["Hacien Pineapple Tequila Blanco"],
     ingredients: ["50ml Hacien Pineapple Tequila Blanco", "25ml lime juice", "25ml agave syrup"],
     garnish: "Lime wedge",
+    clues: [
+      "25ml lime juice",
+      "25ml agave syrup",
+      "50ml Hacien Pineapple Tequila Blanco",
+    ],
   },
   {
     id: "hugo-lemon-lime-spritz",
@@ -44,6 +54,12 @@ export const MENU: Recipe[] = [
       "Soda top",
     ],
     garnish: "Lime wedge & mint sprig",
+    clues: [
+      "Soda top",
+      "75ml prosecco",
+      "25ml elderflower cordial",
+      "40ml Hacien Lemon & Lime Tequila",
+    ],
   },
   {
     id: "limoncello-garden-spritz",
@@ -58,6 +74,12 @@ export const MENU: Recipe[] = [
       "Soda top",
     ],
     garnish: "Cucumber wheel, lemon wheel & mint sprig",
+    clues: [
+      "Soda top",
+      "75ml prosecco",
+      "25ml Hacien Tequila Blanco",
+      "25ml Limoncello Isolabella",
+    ],
   },
   {
     id: "hacien-cucumber-mint-spritz",
@@ -74,6 +96,13 @@ export const MENU: Recipe[] = [
       "Soda top",
     ],
     garnish: "Cucumber wheel & mint sprig",
+    clues: [
+      "Soda top",
+      "25ml lime juice",
+      "25ml agave syrup",
+      "35ml Sauvignon Blanc",
+      "35ml Hacien Tequila Blanco",
+    ],
   },
   {
     id: "hacien-pineapple-spritz",
@@ -90,6 +119,14 @@ export const MENU: Recipe[] = [
       "Soda top",
     ],
     garnish: "Raspberry & mint sprig",
+    clues: [
+      "Soda top",
+      "15ml lime juice",
+      "15ml honey",
+      "10 mint leaves",
+      "4 raspberries",
+      "50ml Hacien Pineapple Tequila Blanco",
+    ],
   },
   {
     id: "grown-up-drumstick",
@@ -104,6 +141,12 @@ export const MENU: Recipe[] = [
       "15ml lime juice",
     ],
     garnish: "Strawberry",
+    clues: [
+      "15ml lime juice",
+      "15ml vanilla syrup",
+      "15ml Chambord",
+      "50ml Summer Berries Tequila",
+    ],
   },
   {
     id: "summer-royale-spritz",
@@ -119,6 +162,13 @@ export const MENU: Recipe[] = [
       "Soda top",
     ],
     garnish: "Strawberry",
+    clues: [
+      "Soda top",
+      "75ml prosecco",
+      "15ml vanilla syrup",
+      "15ml Chambord",
+      "40ml Hacien Summer Berries Tequila",
+    ],
   },
   {
     id: "coffee-tequila-negroni",
@@ -128,6 +178,11 @@ export const MENU: Recipe[] = [
     spirits: ["Hacien Coffee Tequila", "Campari", "Martini Rosso"],
     ingredients: ["25ml Hacien Coffee Tequila", "25ml Campari", "25ml Martini Rosso"],
     garnish: "Orange peel or slice",
+    clues: [
+      "25ml Martini Rosso",
+      "25ml Campari",
+      "25ml Hacien Coffee Tequila",
+    ],
   },
 
   // ---------- Spritzes ----------
@@ -139,6 +194,11 @@ export const MENU: Recipe[] = [
     spirits: ["Romeo Prosecco", "St-Germain"],
     ingredients: ["75ml Romeo Prosecco", "25ml St-Germain elderflower liqueur", "Soda top"],
     garnish: "Lime wedge or lemon wheel & mint sprig",
+    clues: [
+      "Soda top",
+      "75ml Romeo Prosecco",
+      "25ml St-Germain elderflower liqueur",
+    ],
   },
   {
     id: "sarti-spritz",
@@ -148,6 +208,11 @@ export const MENU: Recipe[] = [
     spirits: ["Romeo Prosecco", "Sarti"],
     ingredients: ["75ml Romeo Prosecco", "50ml Sarti", "Soda top"],
     garnish: "Lime wedge",
+    clues: [
+      "Soda top",
+      "75ml Romeo Prosecco",
+      "50ml Sarti",
+    ],
   },
   {
     id: "blush-spritz",
@@ -157,6 +222,12 @@ export const MENU: Recipe[] = [
     spirits: ["Prosecco", "Isolabella Limoncello", "Chambord"],
     ingredients: ["75ml prosecco", "25ml Isolabella Limoncello", "25ml Chambord", "25ml soda"],
     garnish: "Lemon slice",
+    clues: [
+      "25ml soda",
+      "75ml prosecco",
+      "25ml Chambord",
+      "25ml Isolabella Limoncello",
+    ],
   },
   {
     id: "chambord-royale",
@@ -166,6 +237,10 @@ export const MENU: Recipe[] = [
     spirits: ["Romeo Prosecco", "Chambord"],
     ingredients: ["125ml Romeo Prosecco", "25ml Chambord Black Raspberry Liqueur"],
     garnish: "Raspberry or seasonal berry",
+    clues: [
+      "125ml Romeo Prosecco",
+      "25ml Chambord Black Raspberry Liqueur",
+    ],
   },
   {
     id: "aperol-spritz",
@@ -175,6 +250,11 @@ export const MENU: Recipe[] = [
     spirits: ["Romeo Prosecco", "Aperol"],
     ingredients: ["75ml Romeo Prosecco", "50ml Aperol", "Soda top"],
     garnish: "Orange wheel slice",
+    clues: [
+      "Soda top",
+      "75ml Romeo Prosecco",
+      "50ml Aperol",
+    ],
   },
 
   // ---------- Classics ----------
@@ -193,6 +273,13 @@ export const MENU: Recipe[] = [
       "Mint leaves",
     ],
     garnish: "Mint sprig",
+    clues: [
+      "100ml soda",
+      "Mint leaves",
+      "4 lime wedges (muddled)",
+      "10ml Monin Gomme",
+      "50ml Bacardi Carta Blanca or Bacardi Raspberry",
+    ],
   },
   {
     id: "tokyo-iced-tea",
@@ -209,6 +296,14 @@ export const MENU: Recipe[] = [
       "25ml lemonade",
     ],
     garnish: "Lime wedge",
+    clues: [
+      "25ml lemonade",
+      "15ml Smirnoff",
+      "15ml Gordon's gin",
+      "15ml Bacardi",
+      "15ml silver tequila",
+      "15ml Midori",
+    ],
   },
   {
     id: "woodford-old-fashioned",
@@ -222,6 +317,11 @@ export const MENU: Recipe[] = [
       "2 dashes Angostura bitters + dash of water",
     ],
     garnish: "Orange slice & glacé cherry",
+    clues: [
+      "Brown sugar cube",
+      "2 dashes Angostura bitters + dash of water",
+      "50ml Woodford Reserve",
+    ],
   },
   {
     id: "negroni",
@@ -236,6 +336,11 @@ export const MENU: Recipe[] = [
       "25ml Martini Rosso",
     ],
     garnish: "Orange slice or peel",
+    clues: [
+      "25ml Martini Rosso",
+      "25ml Campari",
+      "25ml Tanqueray London Dry or Tanqueray Flor de Sevilla",
+    ],
   },
   {
     id: "gin-tiki",
@@ -245,6 +350,12 @@ export const MENU: Recipe[] = [
     spirits: ["Gordon's gin", "Malibu"],
     ingredients: ["50ml Gordon's gin", "25ml Malibu", "75ml pineapple juice", "10ml vanilla syrup"],
     garnish: "3 glacé cherries",
+    clues: [
+      "10ml vanilla syrup",
+      "75ml pineapple juice",
+      "50ml Gordon's gin",
+      "25ml Malibu",
+    ],
   },
   {
     id: "cosmopolitan",
@@ -259,6 +370,12 @@ export const MENU: Recipe[] = [
       "Juice of half a lime",
     ],
     garnish: "Orange slice or peel",
+    clues: [
+      "Juice of half a lime",
+      "50ml cranberry juice",
+      "25ml Cointreau",
+      "50ml Smirnoff vodka",
+    ],
   },
   {
     id: "passionfruit-martini",
@@ -274,6 +391,13 @@ export const MENU: Recipe[] = [
       "25ml prosecco",
     ],
     garnish: "Lime wedge & half a passionfruit",
+    clues: [
+      "10ml Monin Gomme",
+      "25ml prosecco",
+      "50ml Smirnoff",
+      "15ml Passoa",
+      "25ml passionfruit juice/pulp/coulis/purée",
+    ],
   },
   {
     id: "espresso-martini",
@@ -283,6 +407,12 @@ export const MENU: Recipe[] = [
     spirits: ["Tia Maria", "Smirnoff vodka"],
     ingredients: ["25ml Tia Maria", "25ml Smirnoff vodka", "Double espresso", "15ml Monin Gomme"],
     garnish: "3 coffee beans",
+    clues: [
+      "15ml Monin Gomme",
+      "25ml Smirnoff vodka",
+      "25ml Tia Maria",
+      "Double espresso",
+    ],
   },
   {
     id: "bramble-berry",
@@ -297,6 +427,11 @@ export const MENU: Recipe[] = [
       "Juice of half a lemon",
     ],
     garnish: "Berries & lemon slice",
+    clues: [
+      "Juice of half a lemon",
+      "25ml Crème de Cassis or Chambord",
+      "50ml Tanqueray Blackcurrant Royale gin",
+    ],
   },
 
   // ---------- Non-alcoholic ----------
@@ -314,6 +449,13 @@ export const MENU: Recipe[] = [
       "8-10 mint leaves",
     ],
     garnish: "Mint sprig & lime wedge",
+    clues: [
+      "25ml lime juice",
+      "8-10 mint leaves",
+      "2 lime wedges (muddled)",
+      "15ml grenadine syrup",
+      "150-200ml pineapple juice",
+    ],
   },
   {
     id: "na-st-clements-spritz",
@@ -324,6 +466,12 @@ export const MENU: Recipe[] = [
     spirits: [],
     ingredients: ["75ml orange juice", "50ml lemonade", "Squeeze of lemon juice", "Dash of Diet Coke"],
     garnish: "Orange wheel, lemon wheel & rosemary sprig",
+    clues: [
+      "50ml lemonade",
+      "Squeeze of lemon juice",
+      "Dash of Diet Coke",
+      "75ml orange juice",
+    ],
   },
   {
     id: "na-cranberry-cooler",
@@ -333,6 +481,12 @@ export const MENU: Recipe[] = [
     spirits: [],
     ingredients: ["50ml cranberry juice", "25ml lemonade", "25ml lime juice", "15ml grenadine syrup"],
     garnish: "Lemon wheel & berries",
+    clues: [
+      "25ml lemonade",
+      "25ml lime juice",
+      "15ml grenadine syrup",
+      "50ml cranberry juice",
+    ],
   },
 ];
 

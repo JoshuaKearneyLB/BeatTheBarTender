@@ -2,9 +2,10 @@
 
 // First-visit card in live mode: pick a name and a token, join the shift.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LogIn } from "lucide-react";
 import PixelToken from "@/components/PixelToken";
+import { loadProfile, saveProfile } from "@/lib/profile";
 import { DEFAULT_TOKEN, PLAYER_TOKENS } from "@/lib/tokens";
 
 
@@ -20,11 +21,21 @@ export default function JoinCard({
   const [token, setToken] = useState(DEFAULT_TOKEN);
   const [busy, setBusy] = useState(false);
 
+  // Same phone, same person: start from the name and piece they used last.
+  useEffect(() => {
+    const p = loadProfile();
+    if (p) {
+      setName(p.name);
+      setToken(p.token);
+    }
+  }, []);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     try {
       await onJoin(name, token);
+      saveProfile({ name, token });
     } finally {
       setBusy(false);
     }

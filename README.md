@@ -1,6 +1,13 @@
-# 🏁 Baropoly — tonight's drink race
+# 🏁 Baropoly — two games for the bar
 
-**Pick a drink. Set a number. First behind the bar to sell it wins.**
+1. **The drink race.** Pick a drink. Set a number. First behind the bar to
+   sell it wins.
+2. **The specs test — Beat the Bartender.** The build of a house drink
+   prints one line at a time; call it before the smug one behind the bar
+   does. Every game goes in the book, and **My personal bests** keeps your
+   records and the specs you keep fumbling.
+
+## Game 1: the drink race
 
 A manager opens a race in under a minute: the drink (from the house menu or
 anything else), a target (10, 20, 30…) and what the winner gets. The crew
@@ -29,9 +36,10 @@ their own so the race feels live; tap **try the bar view** to race them.
 
 ### Going live
 
-1. **Supabase:** create a project, then run both migrations in order —
-   `supabase/migrations/0001_drink_race.sql`, then `0002_go_live.sql`
-   (`supabase db push`, or paste each into the SQL editor).
+1. **Supabase:** create a project, then run the migrations in order —
+   `0001_drink_race.sql`, `0002_go_live.sql`, `0003_specs_bests.sql` from
+   `supabase/migrations/` (`supabase db push`, or paste each into the SQL
+   editor).
 2. **Anonymous sign-ins:** Authentication → Sign In / Providers → turn on
    *Allow anonymous sign-ins*. Staff never make accounts.
 3. **Env vars** (Project Settings → API) — locally in `.env.local`, and on
@@ -69,13 +77,42 @@ phone*, so nobody has to find the link again.
 - **Manager PIN** (optional) lets a second phone make corrections. The
   phone that opened the race never needs it.
 
+## Game 2: the specs test
+
+The mechanics are the original standalone game's, unchanged: ten rounds off
+the house menu, the build prints a line every three seconds (least to most
+revealing), a correct call scores 50 + 50 per line still hidden, and the
+house — Sam, Rusty or Vesper — plays the same round with its own speed and
+accuracy. Keys 1–4 answer, Enter moves on.
+
+What's new is the book:
+
+- **Every finished game is recorded**: opponent, scores, streak, rounds
+  right, fastest call, and each round's drink and lines showing.
+- **New personal best** gets stamped on the final tab when a game beats
+  your best against that opponent.
+- **`/bests`** shows, per opponent, your best score (and when), longest
+  streak, fastest call and games won; your last 10 games; and **Specs to
+  study** — drinks you've missed or called slowly, worst first, with the
+  full spec.
+- **Where it's kept:** live, in `specs_runs`, against the phone's anonymous
+  sign-in (private: you can only read your own). A game finished offline is
+  queued on the phone and sent next time. In demo mode, on the phone. Your
+  name and piece are shared with the race's join card.
+- **Cheat-proofing:** scoring happens on the phone, so `record_specs_run`
+  re-adds every round and refuses anything that doesn't add up.
+
+The menu in `lib/recipes.ts` drives both games; each drink's `clues` are
+its spec reordered least-to-most revealing for the specs test.
+
 ## Architecture: the database is the referee
 
 `lib/race.ts` runs the rules optimistically in the browser;
 `_settle_race` in `supabase/migrations/0001_drink_race.sql` runs them
 authoritatively in Postgres. Row Level Security blocks every direct write —
 `create_race`, `join_race`, `ring_in` and `adjust_count` are the only write
-path (`race_id_for_code` resolves typed codes). Taps lock the race row so two people hitting the target together
+path (`race_id_for_code` resolves typed codes; `record_specs_run` is the
+only way a specs game gets in). Taps lock the race row so two people hitting the target together
 can't both win. The PIN hash lives in a table no client can read.
 
 ## Structure
@@ -87,6 +124,8 @@ app/
   manager/page.tsx          Start a race: drink, target, prize (name + PIN tucked away)
   manager/[gameId]/page.tsx Manager console: race code + share, stats, track, till check
   game/[gameId]/page.tsx    Bartender view: track, ticker, Sold one, leaderboard
+  specs/page.tsx            The specs test (+ specs.css, its house style)
+  bests/page.tsx            My personal bests
 components/
   race/RaceTrack.tsx        Chalkboard track, one box per drink, animated pieces
   race/Leaderboard.tsx      Ranked racers with progress bars (+ manager controls)
@@ -94,6 +133,7 @@ components/
   race/PrizeModal.tsx       Full-screen prize poster
   bartender/TallyPad.tsx    The drink, your count, Sold one / undo
   bartender/JoinCard.tsx    Name + piece picker (live mode)
+  specs/SpecsGame.tsx       The specs test: rounds, timers, final tab, save
 lib/
   race.ts                   Pure race rules (mirrored in SQL) + ticker lines
   useRace.ts                One API, two engines (demo / live)
@@ -101,33 +141,42 @@ lib/
   useLiveRace.ts            Auth + optimistic taps + Realtime reconciliation
   demoSetup.ts              Carries the demo race setup in the URL
   myRaces.ts                Races this phone opened or joined (front door list)
-  recipes.ts                The venue's 25-drink menu (the drink picker)
+  recipes.ts                The venue's 25-drink menu — drives both games
+  specs.ts                  Specs test rules + personal-best maths
+  specsStore.ts             Saving/loading games (Supabase, offline queue, demo)
+  profile.ts                This phone's name + piece, shared by both games
   supabase/                 client, auth, db (rows/RPCs), realtime
 supabase/
   migrations/0001_drink_race.sql  The schema, RLS, RPCs
   migrations/0002_go_live.sql     Supabase fixes + five-letter race codes
+  migrations/0003_specs_bests.sql Specs test games + record_specs_run
   tests/                    Platform stub + RPC behavioral tests
-public/training/            Bonus: “Beat the Bartender” specs test
-                            (data/cocktails.js mirrors lib/recipes.ts — keep in sync)
 ```
 
 ## Testing
 
-- `npm run test:db` — throwaway local Postgres, the migrations, and 11
+- `npm run test:db` — throwaway local Postgres, the migrations, and 14
   behavioral tests: create/join, PIN hash kept private, ±1 taps and undo,
   no tapping for someone else, first-to-target wins and locks, PIN-gated
   corrections, a correction reopening the race with a paper trail, the
   win moving on a correction, idempotent rejoin, RLS blocking direct writes,
-  short codes with case-insensitive lookup.
+  short codes with case-insensitive lookup; specs games recorded with
+  server-checked totals, impossible games refused, and games private to
+  their player.
+- `npm run test:specs` — the specs test's rules and personal-best maths:
+  scoring unchanged, the house's lock-in, bests per opponent, what counts
+  as a new best, and what lands on "Specs to study".
 - `npm run test:e2e` — Playwright smoke test of Demo Mode at phone size
   (setup → manager console → bar view carries the race → taps/undo → prize
-  → finish → manager correction hands out the win → specs test). Needs
+  → finish → manager correction hands out the win → a full specs test,
+  the new-best stamp, the bests page, old /training links). Needs
   `npm run build && npm start` and a Chromium binary (`CHROMIUM_BIN`).
 - `npm run test:e2e:live` — two phones (separate anonymous sessions)
   against a real Supabase: manager opens a race, bartender joins by typed
   code, fast taps to the win, the manager sees it over Realtime, a till
   check reopens it on both phones, refresh keeps the racer, front-door
-  lists, polite bad codes/links, and the demo still working. Needs a build
+  lists, polite bad codes/links, the demo still working, and a specs game
+  saved to Supabase and read back on that phone only. Needs a build
   made with the Supabase env vars (`npx supabase start` works locally with
   anonymous sign-ins enabled in `supabase/config.toml`).
 - `npm run typecheck` / `npm run build` — strict TypeScript.
@@ -135,7 +184,8 @@ public/training/            Bonus: “Beat the Bartender” specs test
 ## Known limits
 
 - Anonymous sessions are per-browser; clearing site data means rejoining
-  as a new racer.
+  as a new racer and starting a fresh book of personal bests. Real
+  accounts (e.g. an email sign-in link) would carry bests across phones.
 - Counts are trusted until the till check — by design, for speed behind a
   busy bar.
 - One race per link; start another race for the next night.

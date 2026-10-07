@@ -10,6 +10,7 @@
 // Env: BASE_URL (default http://localhost:3000), CHROMIUM_BIN, SHOTS_DIR.
 
 import { chromium } from "playwright-core";
+import { playSpecsGame } from "./specs-play.mjs";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const SHOTS = process.env.SHOTS_DIR ?? "/tmp";
@@ -116,6 +117,23 @@ try {
   await bar.goto(BASE + "/manager/demo?drink=Mojito&target=10");
   await bar.waitForSelector("h1:has-text('Mojito')");
   await bar.waitForSelector("text=Demo");
+
+  // Specs test: the game goes into the book (Supabase), and the bests page
+  // reads it back for this phone only
+  await bar.goto(BASE + "/specs");
+  const score = await playSpecsGame(bar, "mixologist");
+  await bar.waitForSelector('[data-testid="new-best"]');
+  const note = await bar.locator('[data-testid="save-note"]').innerText();
+  if (note.trim() !== "in the book.") throw new Error(`specs run not saved to Supabase: "${note}"`);
+  await bar.goto(BASE + "/bests");
+  await bar.waitForSelector('[data-testid="best-score-mixologist"]');
+  const best = Number(await bar.locator('[data-testid="best-score-mixologist"]').innerText());
+  if (best !== score) throw new Error(`bests page shows ${best}, game scored ${score}`);
+  await bar.waitForSelector('[data-testid="profile-name"]:has-text("Ana")'); // name from the race
+  await bar.screenshot({ path: `${SHOTS}/live-bests.png`, fullPage: true });
+  // The manager's phone has its own (empty) book
+  await boss.goto(BASE + "/bests");
+  await boss.waitForSelector("text=nothing in the book yet.");
 
   if (errors.length) throw new Error("JS errors:\n" + errors.join("\n"));
   console.log("LIVE SMOKE PASSED");

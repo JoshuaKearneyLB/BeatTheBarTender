@@ -1,20 +1,9 @@
-/* Specs Test — same house style as the app, dialled down.
-   Zero dependencies: fonts are the same committed woff2 files the app uses,
-   loaded by relative path so this still works opened straight off disk. */
+/* Beat the Bartender — the specs test's house style, ported verbatim from
+   the standalone game and scoped under .specs-test so it can't touch the
+   race screens (and the race's global .stamp can't leak in). Fonts come
+   from the app's next/font variables. */
 
-@font-face {
-  font-family: "Bebas Neue";
-  src: url("../../fonts/BebasNeue-Regular.woff2") format("woff2");
-  font-display: swap;
-}
-@font-face {
-  font-family: "Caveat";
-  src: url("../../fonts/Caveat-Bold.woff2") format("woff2");
-  font-weight: 700;
-  font-display: swap;
-}
-
-:root {
+.specs-test {
   --bar-950: #050506;
   --bar-900: #0b0b0d;
   --bar-800: #131316;
@@ -28,53 +17,23 @@
   --danger-400: #ff5c8a;
   --paper-100: #f4ecdb;
   --ink-900: #1c1712;
-  --display: "Bebas Neue", "Arial Narrow", sans-serif;
-  --chalk: "Caveat", "Segoe Script", cursive;
+  --display: var(--font-display), "Bebas Neue", "Arial Narrow", sans-serif;
+  --chalk: var(--font-chalk), "Caveat", "Segoe Script", cursive;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  background-color: var(--bar-900);
-  background-image:
-    radial-gradient(700px 320px at 50% -80px, rgba(255, 185, 46, 0.07), transparent 65%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
-  color: var(--cream-100);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  padding: 1.75rem 1rem 3rem;
-  -webkit-tap-highlight-color: transparent;
-}
-
-main {
   width: 100%;
   max-width: 640px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3rem;
+  color: var(--cream-100);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  animation: specs-fade-in 0.3s ease;
 }
-
-.screen {
-  display: none;
-}
-.screen.active {
-  display: block;
-  animation: fade-in 0.3s ease;
-}
-@keyframes fade-in {
+@keyframes specs-fade-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
 }
 
-.hidden {
-  display: none !important;
-}
-
-.ticket-label {
+.specs-test .ticket-label {
   font-family: var(--mono);
   text-transform: uppercase;
   letter-spacing: 0.16em;
@@ -84,11 +43,11 @@ main {
 
 /* ---------- start ---------- */
 
-.masthead {
+.specs-test .masthead {
   margin-bottom: 1.75rem;
 }
 
-.masthead h1 {
+.specs-test .masthead h1 {
   font-family: var(--display);
   font-size: clamp(3rem, 11vw, 4.25rem);
   line-height: 0.9;
@@ -98,7 +57,7 @@ main {
   transform: rotate(-0.8deg);
 }
 
-.masthead .tagline {
+.specs-test .masthead .tagline {
   font-family: var(--chalk);
   font-size: 1.4rem;
   line-height: 1.25;
@@ -107,11 +66,11 @@ main {
   transform: rotate(0.4deg);
 }
 
-.rules {
+.specs-test .rules {
   margin-bottom: 1.75rem;
 }
 
-.rules h2 {
+.specs-test .rules h2 {
   font-family: var(--mono);
   text-transform: uppercase;
   letter-spacing: 0.16em;
@@ -123,7 +82,7 @@ main {
   margin-bottom: 0.75rem;
 }
 
-.rules ol {
+.specs-test .rules ol {
   list-style: none;
   counter-reset: rule;
   font-family: var(--chalk);
@@ -132,12 +91,12 @@ main {
   color: var(--cream-400);
 }
 
-.rules li {
+.specs-test .rules li {
   counter-increment: rule;
   padding-left: 1.5rem;
   position: relative;
 }
-.rules li::before {
+.specs-test .rules li::before {
   content: counter(rule) ".";
   position: absolute;
   left: 0;
@@ -145,11 +104,11 @@ main {
 }
 
 /* Difficulty picks: menu rows with dot leaders. */
-#difficulty-picker {
+.specs-test .difficulty-picker {
   display: block;
 }
 
-.difficulty {
+.specs-test .difficulty {
   display: flex;
   align-items: baseline;
   width: 100%;
@@ -162,11 +121,11 @@ main {
   text-align: left;
   font: inherit;
 }
-.difficulty:last-child {
+.specs-test .difficulty:last-child {
   border-bottom: none;
 }
 
-.d-label {
+.specs-test .d-label {
   font-family: var(--display);
   font-size: 1.9rem;
   line-height: 1;
@@ -174,12 +133,12 @@ main {
   transition: color 0.12s;
   white-space: nowrap;
 }
-.difficulty:hover .d-label,
-.difficulty:focus-visible .d-label {
+.specs-test .difficulty:hover .d-label,
+.specs-test .difficulty:focus-visible .d-label {
   color: var(--brass-400);
 }
 
-.d-leader {
+.specs-test .d-leader {
   flex: 1;
   margin: 0 0.6rem;
   border-bottom: 3px dotted rgba(143, 143, 152, 0.5);
@@ -187,7 +146,7 @@ main {
   min-width: 1.5rem;
 }
 
-.d-blurb {
+.specs-test .d-blurb {
   font-family: var(--chalk);
   font-size: 1.15rem;
   line-height: 1.15;
@@ -198,7 +157,7 @@ main {
 
 /* ---------- game ---------- */
 
-.scoreboard {
+.specs-test .scoreboard {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -208,7 +167,7 @@ main {
   margin-bottom: 0.85rem;
 }
 
-.scoreboard .who {
+.specs-test .scoreboard .who {
   display: block;
   font-family: var(--mono);
   text-transform: uppercase;
@@ -217,7 +176,7 @@ main {
   color: var(--cream-400);
 }
 
-.scoreboard .score {
+.specs-test .scoreboard .score {
   font-family: var(--display);
   font-size: 2rem;
   line-height: 1;
@@ -225,11 +184,11 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
-.scoreboard > div:last-child {
+.specs-test .scoreboard > div:last-child {
   text-align: right;
 }
 
-#round-label {
+.specs-test .round-label {
   font-family: var(--mono);
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -237,14 +196,14 @@ main {
   color: var(--cream-400);
 }
 
-#streak {
+.specs-test .streak {
   font-family: var(--chalk);
   font-size: 1.2rem;
   color: var(--brass-400);
   min-width: 2.5ch;
 }
 
-#house-status {
+.specs-test .house-status {
   font-family: var(--chalk);
   font-size: 1.3rem;
   color: var(--cream-400);
@@ -252,12 +211,12 @@ main {
   transform: rotate(-0.5deg);
   transition: color 0.2s;
 }
-#house-status.locked {
+.specs-test .house-status.locked {
   color: var(--danger-400);
 }
 
 /* The build prints out on a docket. */
-.clue-card {
+.specs-test .clue-card {
   background:
     repeating-linear-gradient(0deg, rgba(28, 23, 18, 0.02) 0 2px, transparent 2px 4px),
     var(--paper-100);
@@ -268,7 +227,7 @@ main {
   box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5);
 }
 /* torn edge */
-.clue-card::after {
+.specs-test .clue-card::after {
   content: "";
   position: absolute;
   left: 0;
@@ -281,7 +240,7 @@ main {
   background-repeat: repeat-x;
 }
 
-.clue-card h2 {
+.specs-test .clue-card h2 {
   font-family: var(--mono);
   text-transform: uppercase;
   letter-spacing: 0.22em;
@@ -294,27 +253,27 @@ main {
   margin-bottom: 0.6rem;
 }
 
-#clues {
+.specs-test .clues {
   list-style: none;
   font-family: var(--mono);
   font-size: 0.92rem;
   line-height: 1.75;
 }
 
-.clue {
+.specs-test .clue {
   border-bottom: 1px dotted rgba(28, 23, 18, 0.25);
   padding: 0.1rem 0;
 }
-.clue:last-child {
+.specs-test .clue:last-child {
   border-bottom: none;
 }
 
-.clue.hidden-clue {
+.specs-test .clue.hidden-clue {
   color: rgba(28, 23, 18, 0.25);
   letter-spacing: 0.3em;
 }
 
-.clue.revealed {
+.specs-test .clue.revealed {
   color: var(--ink-900);
   animation: print-line 0.28s ease-out;
 }
@@ -325,18 +284,18 @@ main {
 }
 
 /* Answers: POS quick-keys. */
-#options {
+.specs-test .options {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.7rem;
 }
 @media (max-width: 520px) {
-  #options {
+  .specs-test .options {
     grid-template-columns: 1fr;
   }
 }
 
-.option {
+.specs-test .option {
   font-family: var(--display);
   font-size: 1.45rem;
   line-height: 1.1;
@@ -351,38 +310,38 @@ main {
   cursor: pointer;
   transition: transform 60ms ease, box-shadow 60ms ease, border-color 0.12s;
 }
-.option:hover:not(:disabled) {
+.specs-test .option:hover:not(:disabled) {
   border-color: var(--brass-500);
 }
-.option:active:not(:disabled) {
+.specs-test .option:active:not(:disabled) {
   transform: translateY(3px);
   border-bottom-width: 1px;
   box-shadow: none;
 }
-.option:disabled {
+.specs-test .option:disabled {
   cursor: default;
   opacity: 0.6;
 }
-.option.correct {
+.specs-test .option.correct {
   border-color: var(--mint-400);
   color: var(--mint-400);
   opacity: 1;
 }
-.option.wrong {
+.specs-test .option.wrong {
   border-color: var(--danger-400);
   color: var(--danger-400);
   opacity: 1;
 }
 
 /* Round verdict, chalked under the ticket. */
-#round-result {
+.specs-test .round-result {
   margin-top: 1.25rem;
   font-family: var(--chalk);
   font-size: 1.35rem;
   line-height: 1.35;
 }
 
-#round-result .stamp {
+.specs-test .round-result .stamp {
   display: inline-block;
   border: 3px double currentColor;
   border-radius: 3px;
@@ -393,22 +352,22 @@ main {
   transform: rotate(-6deg);
   margin-bottom: 0.5rem;
 }
-#round-result .stamp.good {
+.specs-test .round-result .stamp.good {
   color: var(--mint-400);
 }
-#round-result .stamp.bad {
+.specs-test .round-result .stamp.bad {
   color: var(--danger-400);
 }
 
-#round-result .drink {
+.specs-test .round-result .drink {
   color: var(--brass-400);
 }
 
-#round-result .house-line {
+.specs-test .round-result .house-line {
   color: var(--cream-400);
 }
 
-#round-result .serve-note {
+.specs-test .round-result .serve-note {
   font-family: var(--mono);
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -417,7 +376,7 @@ main {
   margin-top: 0.5rem;
 }
 
-.btn-primary {
+.specs-test .btn-primary {
   display: block;
   width: 100%;
   margin-top: 1.25rem;
@@ -434,7 +393,7 @@ main {
   cursor: pointer;
   transition: transform 60ms ease, box-shadow 60ms ease;
 }
-.btn-primary:active {
+.specs-test .btn-primary:active {
   transform: translateY(3px);
   border-bottom-width: 1px;
   box-shadow: none;
@@ -442,12 +401,12 @@ main {
 
 /* ---------- end ---------- */
 
-#screen-end {
+.specs-test .screen-end {
   max-width: 420px;
   margin: 0 auto;
 }
 
-.final-receipt {
+.specs-test .final-receipt {
   background:
     repeating-linear-gradient(0deg, rgba(28, 23, 18, 0.02) 0 2px, transparent 2px 4px),
     var(--paper-100);
@@ -456,7 +415,7 @@ main {
   position: relative;
   box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.55);
 }
-.final-receipt::after {
+.specs-test .final-receipt::after {
   content: "";
   position: absolute;
   left: 0;
@@ -469,7 +428,7 @@ main {
   background-repeat: repeat-x;
 }
 
-#final-title {
+.specs-test .final-title {
   font-family: var(--display);
   font-size: 2.4rem;
   line-height: 0.95;
@@ -478,7 +437,7 @@ main {
   margin-bottom: 0.9rem;
 }
 
-.final-scores {
+.specs-test .final-scores {
   display: flex;
   justify-content: space-between;
   border-top: 3px double rgba(28, 23, 18, 0.45);
@@ -487,14 +446,14 @@ main {
   margin-bottom: 0.6rem;
 }
 
-.final-scores .big {
+.specs-test .final-scores .big {
   font-family: var(--display);
   font-size: 2.6rem;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
-.final-scores .who {
+.specs-test .final-scores .who {
   font-family: var(--mono);
   text-transform: uppercase;
   letter-spacing: 0.14em;
@@ -502,11 +461,11 @@ main {
   color: rgba(28, 23, 18, 0.6);
 }
 
-.final-scores > div:last-child {
+.specs-test .final-scores > div:last-child {
   text-align: right;
 }
 
-.final-meta {
+.specs-test .final-meta {
   font-family: var(--mono);
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -515,39 +474,113 @@ main {
   margin-bottom: 0.75rem;
 }
 
-#final-rounds {
+.specs-test .final-rounds {
   list-style: none;
   font-family: var(--mono);
   font-size: 0.78rem;
 }
 
-#final-rounds li {
+.specs-test .final-rounds li {
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
   padding: 0.28rem 0;
   border-bottom: 1px dotted rgba(28, 23, 18, 0.25);
 }
-#final-rounds li:last-child {
+.specs-test .final-rounds li:last-child {
   border-bottom: none;
 }
 
-#final-rounds .round-no {
+.specs-test .final-rounds .round-no {
   color: rgba(28, 23, 18, 0.5);
   width: 1.6rem;
 }
 
-#final-rounds .round-name {
+.specs-test .final-rounds .round-name {
   flex: 1;
 }
 
-#final-rounds .round-pts {
+.specs-test .final-rounds .round-pts {
   font-variant-numeric: tabular-nums;
 }
 
-#final-rounds li.won .round-pts {
+.specs-test .final-rounds li.won .round-pts {
   color: #177a3e;
 }
-#final-rounds li.lost .round-pts {
+.specs-test .final-rounds li.lost .round-pts {
   color: #a02c2c;
+}
+
+/* ---------- personal bests (new) ---------- */
+
+.specs-test .picker-head {
+  border-bottom: 2px solid var(--bar-600);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.specs-test .d-best {
+  display: block;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.6rem;
+  color: var(--brass-400);
+  margin-top: 0.2rem;
+}
+
+.specs-test .bests-link {
+  display: block;
+  margin-top: 1.25rem;
+  font-family: var(--chalk);
+  font-size: 1.3rem;
+  color: var(--cream-400);
+  text-align: center;
+}
+.specs-test .bests-link:hover {
+  color: var(--brass-400);
+}
+
+.specs-test .final-head {
+  text-align: center;
+  letter-spacing: 0.22em;
+}
+
+/* Stamped across the final tab when a game beats your best. */
+.specs-test .new-best {
+  text-align: center;
+  margin: -0.2rem 0 0.8rem;
+  animation: stamp-down 0.35s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.specs-test .new-best-stamp {
+  display: inline-block;
+  border: 3px double #177a3e;
+  border-radius: 3px;
+  padding: 0.05em 0.5em;
+  font-family: var(--display);
+  font-size: 1.7rem;
+  letter-spacing: 0.08em;
+  color: #177a3e;
+  transform: rotate(-5deg);
+}
+.specs-test .new-best-line {
+  display: block;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.62rem;
+  color: rgba(28, 23, 18, 0.7);
+  margin-top: 0.4rem;
+}
+@keyframes stamp-down {
+  from { opacity: 0; transform: scale(1.6); }
+  to { opacity: 1; transform: none; }
+}
+
+.specs-test .save-note {
+  font-family: var(--chalk);
+  font-size: 1.05rem;
+  color: rgba(28, 23, 18, 0.6);
+  text-align: center;
+  margin-top: 0.75rem;
 }

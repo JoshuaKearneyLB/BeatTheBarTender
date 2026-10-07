@@ -1,8 +1,9 @@
 "use client";
 
-// The front door's working parts: the race-code box for staff, the races
-// this phone already knows, and the demo — which stays one tap away on a
-// live deployment so venues can try it before they commit.
+// The front door's working parts. Game 1, the drink race: the race-code box
+// for staff, running a race, and the demo (one tap away even on a live
+// deployment, so venues can try it). Game 2, the specs test, and your
+// personal bests. Then the races this phone already knows.
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -36,7 +37,9 @@ export default function FrontDoor() {
   return (
     <>
       <nav className="space-y-1">
-        <p className="ticket border-b-2 border-bar-600 pb-2 text-[10px] text-cream-400">On tonight</p>
+        <p className="ticket border-b-2 border-bar-600 pb-2 text-[10px] text-cream-400">
+          Game 1 · The drink race
+        </p>
 
         {live ? (
           <form
@@ -76,6 +79,14 @@ export default function FrontDoor() {
 
         <DoorLink href="/manager" label="I run the bar" aside="start one" />
         {live && <DoorLink href="/manager/demo" label="See the demo" aside="no setup" />}
+      </nav>
+
+      <nav className="space-y-1">
+        <p className="ticket border-b-2 border-bar-600 pb-2 text-[10px] text-cream-400">
+          Game 2 · The specs test
+        </p>
+        <DoorLink href="/specs" label="Beat the bartender" aside="know your specs" />
+        <DoorLink href="/bests" label="My personal bests" aside="the book" />
       </nav>
 
       {mine.length > 0 && (

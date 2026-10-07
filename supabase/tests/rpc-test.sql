@@ -119,4 +119,52 @@ select assert(race_id_for_code(lower(:'race_code')) = :'race', 'T11 FAIL: lookup
 select assert(race_id_for_code('nope!') is null, 'T11 FAIL: bad code resolved');
 \echo T11 PASS: short race code, case-insensitive lookup
 
+-- ---------- specs test personal bests ----------
+
+-- Ten rounds: rounds 1-3 called right on line 1 of 4 (200 each), round 4
+-- missed, rounds 5-10 called on line 2 of 4 (150 each). Streak 6.
+create function good_rounds() returns jsonb
+language sql as $fn$
+  select jsonb_agg(jsonb_build_object(
+    'drink', 'Drink ' || i,
+    'correct', i <> 4,
+    'linesShown', case when i <= 3 then 1 when i = 4 then 4 else 2 end,
+    'totalLines', 4,
+    'points', case when i <= 3 then 200 when i = 4 then 0 else 150 end,
+    'housePoints', 100
+  ) order by i) from generate_series(1, 10) i;
+$fn$;
+
+-- === T12: a real game is recorded, totals worked out by the server ===
+select as_user('00000000-0000-0000-0000-00000000000b');
+select player_score, house_score, correct, best_streak, fastest_lines
+  from record_specs_run('Ben', 'mixologist', 6, good_rounds()) \gset t12
+select assert(:'t12player_score' = '1500' and :'t12house_score' = '1000'
+  and :'t12correct' = '9' and :'t12best_streak' = '6' and :'t12fastest_lines' = '1', 'T12 FAIL');
+\echo T12 PASS: specs run recorded with server-checked totals
+
+-- === T13: impossible runs are refused ===
+select expect_error(format('select record_specs_run(%L, %L, 6, %L::jsonb)', 'Ben', 'mixologist',
+  jsonb_set(good_rounds(), '{0,points}', '9999')), 'T13 FAIL: inflated round score');
+select expect_error(format('select record_specs_run(%L, %L, 6, %L::jsonb)', 'Ben', 'mixologist',
+  (select jsonb_agg(e) from jsonb_array_elements(good_rounds()) with ordinality t(e, n) where n <= 9)),
+  'T13 FAIL: nine-round game');
+select expect_error(format('select record_specs_run(%L, %L, 10, %L::jsonb)', 'Ben', 'mixologist', good_rounds()),
+  'T13 FAIL: fake streak');
+select expect_error(format('select record_specs_run(%L, %L, 6, %L::jsonb)', 'Ben', 'godmode', good_rounds()),
+  'T13 FAIL: unknown opponent');
+select expect_error(format('select record_specs_run(%L, %L, 6, %L::jsonb)', 'Ben', 'barback',
+  jsonb_set(good_rounds(), '{0,linesShown}', '9')), 'T13 FAIL: more lines than the build');
+\echo T13 PASS: inflated scores, short games, fake streaks, bad opponents refused
+
+-- === T14: runs are private (Supabase grants table reads; RLS decides rows) ===
+grant select on specs_runs to authenticated;
+set role authenticated;
+select as_user('00000000-0000-0000-0000-00000000000b');
+select assert((select count(*) from specs_runs) = 1, 'T14 FAIL: cannot see own run');
+select as_user('00000000-0000-0000-0000-00000000000c');
+select assert((select count(*) from specs_runs) = 0, 'T14 FAIL: can see someone else''s run');
+reset role;
+\echo T14 PASS: you only ever see your own runs
+
 \echo ALL RPC TESTS PASSED

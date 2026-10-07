@@ -1,13 +1,15 @@
-// Browser smoke test of Demo Mode (mobile viewport). Exercises the whole
-// pitch: a manager opens a race with their own drink/number/prize, the
-// bartender view carries it, taps count, undo works, the manager's till
-// check can hand out the win, and the bonus specs test still serves.
+// Browser smoke test of Demo Mode (mobile viewport). Game 1: a manager
+// opens a race with their own drink/number/prize, the bartender view
+// carries it, taps count, undo works, the manager's till check can hand
+// out the win. Game 2: a full specs test, the personal-best stamp, and the
+// personal bests page.
 // Run a production server first:
 //   npm run build && npm start
 // Then: npm run test:e2e
 // Env: BASE_URL (default http://localhost:3000), CHROMIUM_BIN (browser path).
 
 import { chromium } from "playwright-core";
+import { playSpecsGame } from "./specs-play.mjs";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const SHOTS = process.env.SHOTS_DIR ?? "/tmp";
@@ -31,7 +33,7 @@ async function myCount() {
 try {
   // Front door: two choices plus the bonus specs test
   await page.goto(BASE + "/");
-  await page.waitForSelector("text=first behind the bar to sell it wins");
+  await page.waitForSelector("text=beat the bartender on the specs");
   await page.screenshot({ path: `${SHOTS}/race-home.png` });
 
   // Manager opens a race: their drink, their number, their prize
@@ -94,12 +96,35 @@ try {
   }
   await page.waitForSelector('[data-testid="winner-banner"]');
 
-  // Bonus: the specs test still serves the official 25-drink menu
-  const res = await page.goto(BASE + "/training/index.html");
-  if (res.status() !== 200) throw new Error("training game not served");
-  await page.waitForSelector("text=Beat the Bartender");
-  const drinkCount = await page.evaluate(() => COCKTAILS.length);
-  if (drinkCount !== 25) throw new Error(`training menu has ${drinkCount} drinks, expected 25`);
+  // Game 2: the specs test, played to the end, then the personal bests page
+  await page.goto(BASE + "/");
+  await page.click('a[href="/specs"]');
+  await page.waitForURL("**/specs");
+  await page.waitForSelector("text=Who are you up against?");
+  const score = await playSpecsGame(page, "barback");
+  if (!(score > 0)) throw new Error(`specs game scored ${score}`);
+  await page.waitForSelector('[data-testid="new-best"]'); // first game is always a best
+  const note = await page.locator('[data-testid="save-note"]').innerText();
+  if (!note.includes("kept on this phone")) throw new Error(`save note: "${note}"`);
+  await page.screenshot({ path: `${SHOTS}/specs-final.png`, fullPage: true });
+
+  // A second game only stamps a best if it beats the first
+  await page.click("text=Run it back");
+  await page.waitForSelector("text=your best: " + score);
+  await page.screenshot({ path: `${SHOTS}/specs-start.png`, fullPage: true });
+
+  await page.goto(BASE + "/bests");
+  await page.fill('input[aria-label="Your name"]', "Ana");
+  await page.click("text=Save");
+  await page.waitForSelector('[data-testid="profile-name"]');
+  const best = await page.locator('[data-testid="best-score-barback"]').innerText();
+  if (Number(best) !== score) throw new Error(`bests page shows ${best}, game scored ${score}`);
+  if ((await page.locator('[data-testid="recent-runs"] li').count()) !== 1) throw new Error("recent games wrong");
+  await page.screenshot({ path: `${SHOTS}/specs-bests.png`, fullPage: true });
+
+  // Old links to the standalone game land on the new one
+  await page.goto(BASE + "/training/index.html");
+  await page.waitForURL("**/specs");
 
   if (errors.length) throw new Error("JS errors:\n" + errors.join("\n"));
   console.log("SMOKE PASSED");

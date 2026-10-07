@@ -37,7 +37,12 @@ PSQL=("$PGBIN/psql" -h "$DIR" -p "$PORT" -U postgres -v ON_ERROR_STOP=1 -q)
 "${PSQL[@]}" -c "create database baropoly_test"
 MIGRATION_ARGS=(-f supabase/tests/supabase-stub.sql)
 for m in supabase/migrations/*.sql; do MIGRATION_ARGS+=(-f "$m"); done
-"${PSQL[@]}" -d baropoly_test "${MIGRATION_ARGS[@]}" 2>&1 | grep -v "wal_level\|^HINT" || true
+# A failing migration must stop the run, not leave later tests confused.
+if ! OUT=$("${PSQL[@]}" -d baropoly_test "${MIGRATION_ARGS[@]}" 2>&1); then
+  echo "$OUT" | grep -v "wal_level\|^HINT\|NOTICE"
+  echo "error: migrations failed" >&2
+  exit 1
+fi
 "${PSQL[@]}" -d baropoly_test -f supabase/tests/rpc-test.sql 2>&1 | grep -E "PASS|FAIL|ERROR|ALL RPC"
 
 echo "db tests: OK"
