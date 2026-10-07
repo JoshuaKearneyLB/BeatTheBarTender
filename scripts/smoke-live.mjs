@@ -17,7 +17,13 @@ const executablePath =
   process.env.CHROMIUM_BIN ??
   "/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell";
 
-const browser = await chromium.launch({ executablePath });
+// Behind an egress proxy (CI, sandboxes) the browser needs telling; local
+// servers stay direct.
+const proxyServer = process.env.HTTPS_PROXY ?? process.env.https_proxy;
+const browser = await chromium.launch({
+  executablePath,
+  ...(proxyServer && { proxy: { server: proxyServer, bypass: "localhost,127.0.0.1" } }),
+});
 const errors = [];
 const phone = { viewport: { width: 390, height: 844 } };
 

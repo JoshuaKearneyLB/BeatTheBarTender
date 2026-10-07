@@ -119,23 +119,38 @@ export function useLiveRace(raceId: string, enabled: boolean): RaceApi {
       const race = await fetchRace(supabase, raceId);
       if (cancelled) return;
       setState({ status: "live", error: null, userId, race, events: [] });
-      unsubscribe = subscribeToRace(supabase, raceId, (change) => {
-        if (!change.new) return;
-        setState((s) =>
-          change.table === "racers"
-            ? patchRacer(s, change.new as unknown as RacerRow, hold())
-            : patchRace(s, change.new as unknown as RaceRow),
-        );
-      });
+      unsubscribe = subscribeToRace(
+        supabase,
+        raceId,
+        (change) => {
+          if (!change.new) return;
+          setState((s) =>
+            change.table === "racers"
+              ? patchRacer(s, change.new as unknown as RacerRow, hold())
+              : patchRace(s, change.new as unknown as RaceRow),
+          );
+        },
+        // Catch up on anything that happened while the feed wasn't listening.
+        () => {
+          if (inFlightRef.current === 0) void resync();
+        },
+      );
     })().catch((err: Error) => {
       if (!cancelled) setState((s) => ({ ...s, status: "error", error: err.message }));
     });
 
+    // Phones sleep mid-shift; coming back, the board may be minutes stale.
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && inFlightRef.current === 0) void resync();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
       cancelled = true;
       unsubscribe?.();
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [raceId, enabled]);
+  }, [raceId, enabled, resync]);
 
   const me = state.race?.racers.find((r) => r.profileId === state.userId) ?? null;
   myIdRef.current = me?.id;

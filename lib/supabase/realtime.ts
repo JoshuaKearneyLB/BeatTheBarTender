@@ -10,6 +10,11 @@ export interface RaceChange {
  * row (status, winner). Fires `onChange` per row change; the caller patches
  * local state. Returns an unsubscribe function.
  *
+ * `onReady` fires each time the feed is actually listening — Realtime only
+ * starts forwarding changes a moment after the channel reports SUBSCRIBED,
+ * and again after every reconnect (a phone waking from standby). Anything
+ * that changed in between is invisible to the feed, so the caller refetches.
+ *
  * Requires both tables in the `supabase_realtime` publication
  * (see supabase/migrations/0001_drink_race.sql).
  */
@@ -17,6 +22,7 @@ export function subscribeToRace(
   supabase: SupabaseClient,
   raceId: string,
   onChange: (change: RaceChange) => void,
+  onReady?: () => void,
 ): () => void {
   const forward =
     (table: RaceChange["table"]) => (payload: { new: Record<string, unknown> | null }) =>
@@ -34,7 +40,12 @@ export function subscribeToRace(
       { event: "UPDATE", schema: "public", table: "races", filter: `id=eq.${raceId}` },
       forward("races"),
     )
-    .subscribe();
+    .on("system", {}, (payload: { extension?: string; status?: string }) => {
+      if (payload.extension === "postgres_changes" && payload.status === "ok") onReady?.();
+    })
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") onReady?.();
+    });
 
   return () => {
     void channel.unsubscribe();
