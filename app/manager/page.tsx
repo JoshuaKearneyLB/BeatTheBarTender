@@ -10,9 +10,10 @@ import { ArrowLeft, Flag, Loader2, Trophy } from "lucide-react";
 import PixelToken from "@/components/PixelToken";
 import { CATEGORY_LABELS, MENU, type MenuCategory } from "@/lib/recipes";
 import { DEFAULT_BADGE, PRIZE_BADGES } from "@/lib/tokens";
-import { isDemoMode } from "@/lib/supabase/client";
+import { isLiveConfigured } from "@/lib/supabase/client";
 import { createRaceLive } from "@/lib/supabase/db";
 import { demoSetupQuery } from "@/lib/demoSetup";
+import { rememberRace } from "@/lib/myRaces";
 
 const OTHER = "__other__";
 const TARGETS = [10, 20, 30];
@@ -33,11 +34,15 @@ export default function NewRace() {
   const drinkName =
     drinkId === OTHER ? customDrink.trim() : (MENU.find((d) => d.id === drinkId)?.name ?? "");
 
+  function tryDemo() {
+    const query = demoSetupQuery({ name, drinkName, target, prizeTitle, badge: prizeBadge });
+    router.push(`/manager/demo${query}`);
+  }
+
   async function openRace(e: React.FormEvent) {
     e.preventDefault();
-    if (isDemoMode()) {
-      const query = demoSetupQuery({ name, drinkName, target, prizeTitle, badge: prizeBadge });
-      router.push(`/manager/demo${query}`);
+    if (!isLiveConfigured()) {
+      tryDemo();
       return;
     }
     setBusy(true);
@@ -54,6 +59,7 @@ export default function NewRace() {
       try {
         sessionStorage.setItem("baropoly.manager-pin", pin);
       } catch {}
+      rememberRace({ id: raceId, name, drinkName, role: "manager" });
       router.push(`/manager/${raceId}`);
     } catch (err) {
       setError((err as Error).message);
@@ -198,6 +204,16 @@ export default function NewRace() {
           {busy ? <Loader2 className="size-5 animate-spin" /> : <Flag className="size-5" />}
           {busy ? "Opening…" : `Race to ${target}`}
         </button>
+        {isLiveConfigured() && (
+          <button
+            type="button"
+            onClick={tryDemo}
+            disabled={!drinkName}
+            className="chalk w-full text-center text-lg text-cream-400 underline-offset-4 hover:underline disabled:opacity-50"
+          >
+            or try this race as a demo first →
+          </button>
+        )}
       </form>
     </main>
   );

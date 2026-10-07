@@ -26,6 +26,8 @@ export interface Racer {
 
 export interface Race {
   id: string;
+  /** Short code staff can type on the front door (live races only). */
+  code?: string;
   name: string;
   /** The drink being raced, e.g. "Hacien Pineapple Spritz". */
   drinkName: string;

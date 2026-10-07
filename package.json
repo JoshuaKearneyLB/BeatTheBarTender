@@ -9,7 +9,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test:db": "bash scripts/test-db.sh",
-    "test:e2e": "node scripts/smoke.mjs"
+    "test:e2e": "node scripts/smoke.mjs",
+    "test:e2e:live": "node scripts/smoke-live.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",

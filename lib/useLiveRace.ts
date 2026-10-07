@@ -40,9 +40,15 @@ const INITIAL: LiveState = {
   events: [],
 };
 
-/** Merge an authoritative racer row into state, deriving ticker lines. */
-function patchRacer(state: LiveState, row: RacerRow): LiveState {
+/**
+ * Merge an authoritative racer row into state, deriving ticker lines.
+ * `holdId` names a racer with taps still in flight: their rows are stale
+ * the moment they land, so we keep the optimistic count until the last
+ * tap settles (otherwise fast tapping makes the number jump backwards).
+ */
+function patchRacer(state: LiveState, row: RacerRow, holdId?: string): LiveState {
   if (!state.race) return state;
+  if (holdId && row.id === holdId) return state;
   const next = rowToRacer(row);
   const idx = state.race.racers.findIndex((r) => r.id === next.id);
   const prev = idx === -1 ? undefined : state.race.racers[idx];
@@ -77,6 +83,10 @@ export function useLiveRace(raceId: string, enabled: boolean): RaceApi {
   const supabaseRef = useRef<SupabaseClient | null>(null);
   const stateRef = useRef(state);
   stateRef.current = state;
+  /** My taps sent but not yet answered. */
+  const inFlightRef = useRef(0);
+  const myIdRef = useRef<string | undefined>(undefined);
+  const hold = () => (inFlightRef.current > 0 ? myIdRef.current : undefined);
 
   const warn = useCallback((message: string) => {
     setState((s) => ({
@@ -113,7 +123,7 @@ export function useLiveRace(raceId: string, enabled: boolean): RaceApi {
         if (!change.new) return;
         setState((s) =>
           change.table === "racers"
-            ? patchRacer(s, change.new as unknown as RacerRow)
+            ? patchRacer(s, change.new as unknown as RacerRow, hold())
             : patchRace(s, change.new as unknown as RaceRow),
         );
       });
@@ -128,6 +138,7 @@ export function useLiveRace(raceId: string, enabled: boolean): RaceApi {
   }, [raceId, enabled]);
 
   const me = state.race?.racers.find((r) => r.profileId === state.userId) ?? null;
+  myIdRef.current = me?.id;
 
   const join = useCallback(
     async (name: string, token: string) => {
@@ -168,11 +179,17 @@ export function useLiveRace(raceId: string, enabled: boolean): RaceApi {
             }
           : prev,
       );
+      inFlightRef.current += 1;
       rpcRingIn(supabase, current.id, delta)
-        .then((row) => setState((prev) => patchRacer(prev, row)))
+        .then((row) => {
+          inFlightRef.current -= 1;
+          // Only the last answer is current; earlier ones are already stale.
+          if (inFlightRef.current === 0) setState((prev) => patchRacer(prev, row));
+        })
         .catch((err: Error) => {
+          inFlightRef.current -= 1;
           warn(`Didn't ring in: ${err.message}`);
-          void resync();
+          if (inFlightRef.current === 0) void resync();
         });
     },
     [resync, warn],

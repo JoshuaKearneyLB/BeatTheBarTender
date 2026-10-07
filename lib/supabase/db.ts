@@ -11,6 +11,7 @@ import { getSupabaseBrowser } from "./client";
 
 export interface RaceRow {
   id: string;
+  code: string;
   name: string;
   drink_name: string;
   target: number;
@@ -47,6 +48,7 @@ export function rowToRacer(r: RacerRow): Racer {
 export function applyRaceRow(race: Race, r: RaceRow): Race {
   return {
     ...race,
+    code: r.code,
     name: r.name,
     drinkName: r.drink_name,
     target: r.target,
@@ -62,13 +64,19 @@ export function applyRaceRow(race: Race, r: RaceRow): Race {
 
 // ---------- reads ----------
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function fetchRace(supabase: SupabaseClient, raceId: string): Promise<Race> {
+  if (!UUID.test(raceId)) throw new Error("There's no race at this link. Ask your manager for the code.");
   const [raceRes, racersRes] = await Promise.all([
     supabase.from("races").select("*").eq("id", raceId).single(),
     supabase.from("racers").select("*").eq("race_id", raceId).order("joined_at"),
   ]);
+  if (raceRes.error?.code === "PGRST116") {
+    throw new Error("There's no race at this link. Ask your manager for the code.");
+  }
   const firstError = raceRes.error ?? racersRes.error;
-  if (firstError) throw new Error(`Failed to load the race: ${firstError.message}`);
+  if (firstError) throw new Error(`Couldn't load the race: ${firstError.message}`);
 
   const empty: Race = {
     id: raceId,
@@ -114,6 +122,14 @@ export async function createRaceLive(opts: {
     p_prize_badge: opts.prizeBadge,
     p_pin: opts.pin || null,
   });
+}
+
+/** Resolve a typed race code to its id, or null if there's no such race. */
+export async function raceIdForCode(code: string): Promise<string | null> {
+  const supabase = getSupabaseBrowser();
+  if (!supabase) throw new Error("Supabase is not configured");
+  await ensureSignedIn(supabase);
+  return rpc<string | null>(supabase, "race_id_for_code", { p_code: code });
 }
 
 export const joinRace = (supabase: SupabaseClient, raceId: string, name: string, token: string) =>

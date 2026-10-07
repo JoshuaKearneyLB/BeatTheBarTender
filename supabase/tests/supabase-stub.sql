@@ -19,3 +19,8 @@ create table storage.objects (
 alter table storage.objects enable row level security;
 
 create publication supabase_realtime;
+
+-- Supabase installs pgcrypto in its own schema, not public. Mirror that so
+-- functions that forget to look there fail here too.
+create schema extensions;
+create extension pgcrypto with schema extensions;

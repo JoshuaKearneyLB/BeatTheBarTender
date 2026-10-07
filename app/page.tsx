@@ -1,4 +1,4 @@
-import Link from "next/link";
+import FrontDoor from "@/components/FrontDoor";
 
 export default function Home() {
   return (
@@ -15,23 +15,7 @@ export default function Home() {
         </p>
       </header>
 
-      <nav className="space-y-1">
-        <p className="ticket border-b-2 border-bar-600 pb-2 text-[10px] text-cream-400">On tonight</p>
-        <Link href="/game/demo" className="group flex items-baseline py-3">
-          <span className="display text-3xl text-cream-100 transition-colors group-hover:text-brass-400 group-active:text-brass-400">
-            I&apos;m on the bar
-          </span>
-          <span className="leader" />
-          <span className="chalk text-xl text-cream-400">race</span>
-        </Link>
-        <Link href="/manager" className="group -mt-1 flex items-baseline py-3">
-          <span className="display text-3xl text-cream-100 transition-colors group-hover:text-brass-400 group-active:text-brass-400">
-            I run the bar
-          </span>
-          <span className="leader" />
-          <span className="chalk text-xl text-cream-400">start one</span>
-        </Link>
-      </nav>
+      <FrontDoor />
 
       <a href="/training/index.html" className="chalk text-lg text-cream-400 underline-offset-4 hover:underline">
         bonus: the specs test — beat the bartender →

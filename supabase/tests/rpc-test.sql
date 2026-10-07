@@ -112,4 +112,11 @@ reset role;
 select assert((select count = 3 from racers where id = :'ben'), 'T10 FAIL: direct update landed');
 \echo T10 PASS: direct writes refused
 
+-- === T11: every race gets a short code; lookup ignores case ===
+select code as race_code from races where id = :'race' \gset
+select assert(:'race_code' ~ '^[A-HJKMNP-Z2-9]{5}$', 'T11 FAIL: code shape ' || :'race_code');
+select assert(race_id_for_code(lower(:'race_code')) = :'race', 'T11 FAIL: lookup');
+select assert(race_id_for_code('nope!') is null, 'T11 FAIL: bad code resolved');
+\echo T11 PASS: short race code, case-insensitive lookup
+
 \echo ALL RPC TESTS PASSED

@@ -7,20 +7,60 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, ChevronDown, ChevronUp, Copy, KeyRound, Loader2, WifiOff } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  KeyRound,
+  Loader2,
+  Share2,
+  WifiOff,
+} from "lucide-react";
 import EventTicker from "@/components/race/EventTicker";
 import Leaderboard from "@/components/race/Leaderboard";
 import RaceTrack from "@/components/race/RaceTrack";
 import { totalSold } from "@/lib/race";
 import { demoSetupFromParams, demoSetupQuery } from "@/lib/demoSetup";
+import { rememberRace } from "@/lib/myRaces";
 import { useRace } from "@/lib/useRace";
 
 const PIN_KEY = "baropoly.manager-pin";
 
-function ShareLink({ path, demo }: { path: string; demo: boolean }) {
+function ShareLink({
+  path,
+  demo,
+  code,
+  drinkName,
+}: {
+  path: string;
+  demo: boolean;
+  code?: string;
+  drinkName: string;
+}) {
   const [url, setUrl] = useState(path);
   const [copied, setCopied] = useState(false);
-  useEffect(() => setUrl(`${window.location.origin}${path}`), [path]);
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => {
+    setUrl(`${window.location.origin}${path}`);
+    setCanShare(typeof navigator.share === "function");
+  }, [path]);
+
+  async function share() {
+    const text = `Drink race tonight: ${drinkName}. Get on the board${code ? ` (code ${code})` : ""}:`;
+    try {
+      if (canShare) {
+        await navigator.share({ title: "Tonight's drink race", text, url });
+        return;
+      }
+      await navigator.clipboard.writeText(`${text} ${url}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // share sheet dismissed, or clipboard blocked — the link is on screen
+    }
+  }
 
   return (
     <div className="panel">
@@ -30,22 +70,24 @@ function ShareLink({ path, demo }: { path: string; demo: boolean }) {
           {demo ? "try the bar view" : "open it"}
         </Link>
       </div>
+      {code && (
+        <div className="flex items-baseline justify-between gap-3 border-b-2 border-bar-600 px-3 py-2">
+          <span className="ticket text-[10px] text-cream-400">race code — type it on the front door</span>
+          <span data-testid="race-code" className="numerals text-3xl tracking-[0.25em] text-brass-400">
+            {code}
+          </span>
+        </div>
+      )}
       <div className="flex items-center gap-2 p-2">
-        <code data-testid="share-link" className="ticket min-w-0 flex-1 truncate text-[11px] normal-case text-cream-100">
+        <code data-testid="share-link" className="numerals min-w-0 flex-1 truncate text-[11px] font-normal text-cream-100">
           {url}
         </code>
         <button
-          onClick={async () => {
-            try {
-              await navigator.clipboard.writeText(url);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1500);
-            } catch {}
-          }}
+          onClick={share}
           className="pos-key display flex items-center gap-1 border-2 border-brass-400 bg-brass-500 px-3 py-1 text-lg text-bar-950"
         >
-          {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-          {copied ? "Copied" : "Copy"}
+          {copied ? <Check className="size-4" /> : canShare ? <Share2 className="size-4" /> : <Copy className="size-4" />}
+          {copied ? "Copied" : canShare ? "Share" : "Copy"}
         </button>
       </div>
     </div>
@@ -70,6 +112,19 @@ export default function ManagerConsole({
       setPin(sessionStorage.getItem(PIN_KEY) ?? "");
     } catch {}
   }, []);
+  // Keep this race on the manager's front door.
+  const liveRace = mode === "live" ? race : null;
+  useEffect(() => {
+    if (!liveRace) return;
+    rememberRace({
+      id: liveRace.id,
+      code: liveRace.code,
+      name: liveRace.name,
+      drinkName: liveRace.drinkName,
+      role: "manager",
+    });
+  }, [liveRace?.id, liveRace?.code]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function updatePin(value: string) {
     setPin(value);
     try {
@@ -156,8 +211,16 @@ export default function ManagerConsole({
       )}
 
       <ShareLink
-        path={`/game/${race.id}${mode === "demo" ? demoSetupQuery(demoSetup) : ""}`}
+        path={
+          mode === "demo"
+            ? `/game/${race.id}${demoSetupQuery(demoSetup)}`
+            : race.code
+              ? `/join/${race.code}`
+              : `/game/${race.id}`
+        }
         demo={mode === "demo"}
+        code={race.code}
+        drinkName={race.drinkName}
       />
 
       <RaceTrack race={race} />

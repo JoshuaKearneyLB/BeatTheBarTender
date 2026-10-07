@@ -3,7 +3,7 @@
 // Bartender view: the track, the leaderboard, the ticker, and the till key
 // within thumb reach. The trophy in the header opens what they're racing for.
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Trophy, WifiOff } from "lucide-react";
 import { motion } from "framer-motion";
@@ -14,6 +14,7 @@ import RaceTrack from "@/components/race/RaceTrack";
 import JoinCard from "@/components/bartender/JoinCard";
 import TallyPad from "@/components/bartender/TallyPad";
 import { demoSetupFromParams } from "@/lib/demoSetup";
+import { rememberRace } from "@/lib/myRaces";
 import { useRace } from "@/lib/useRace";
 
 export default function RacePage({
@@ -27,6 +28,19 @@ export default function RacePage({
   const demoSetup = demoSetupFromParams(use(searchParams));
   const { mode, error, race, events, me, join, ringIn } = useRace(gameId, demoSetup);
   const [prizeOpen, setPrizeOpen] = useState(false);
+
+  // Once you're in a live race, it stays on your front door.
+  const joined = mode === "live" && race && me ? race : null;
+  useEffect(() => {
+    if (!joined) return;
+    rememberRace({
+      id: joined.id,
+      code: joined.code,
+      name: joined.name,
+      drinkName: joined.drinkName,
+      role: "racer",
+    });
+  }, [joined?.id, joined?.code]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (mode === "connecting") {
     return (
