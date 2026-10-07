@@ -1,16 +1,19 @@
-# 🎲 Baropoly (v0.5 — Monthly Marathon)
+# 🏁 Baropoly — tonight's drink race
 
-Mobile-first PWA that gamifies bar sales as a digital board game. The
-manager builds a campaign: a 20–40 tile board where **every tile carries a
-goal** — sell 12 cocktails, upsell 4 top-shelf spirits, land a 5-star
-review. Bartenders track progress on their phones, submit each quest with a
-till/receipt photo, and move forward when the manager approves. First to
-beat the final Boss Quest at Last Call wins the marathon. No POS
-integration — manual reporting backed by photo verification and manager
-oversight.
+**Pick a drink. Set a number. First behind the bar to sell it wins.**
+
+A manager opens a race in under a minute: the drink (from the house menu or
+anything else), a target (10, 20, 30…) and what the winner gets. The crew
+open a link on their phones, pick a name and a pixel piece, and tap
+**Sold one** every time they ring the drink in. Everyone's piece moves along
+the same chalkboard track in real time. First to the target wins; at close
+the manager checks counts against the till and the win follows the numbers.
+
+No POS integration, no accounts, no photos — counts are trusted on the night
+and checked at close.
 
 **Stack:** Next.js (App Router) · Tailwind CSS v4 · Framer Motion · Lucide ·
-Supabase (Auth + Postgres + Realtime + Storage) · Vercel / PWA.
+Supabase (anonymous Auth + Postgres + Realtime) · installable PWA.
 
 ## Quick start
 
@@ -20,156 +23,97 @@ npm run dev
 ```
 
 Open http://localhost:3000. With no env vars set the app runs in **Demo
-Mode** — every screen works with local seeded state (including a pending
-submission in the manager queue), so you can feel the loop before
-provisioning anything.
+Mode**: start a race at **I run the bar**, and the demo uses *your* drink,
+number and prize. A seeded crew (Marco, Dee, Sam) keep ringing drinks in on
+their own so the race feels live; tap **try the bar view** to race them.
 
 ### Going live (multi-device realtime)
 
-1. Create a Supabase project and run the five migrations in order
-   (`supabase db push`, or paste `supabase/migrations/*.sql` into the SQL
-   editor: 0001 → 0002 → 0003 → 0004 → 0005).
-2. Enable **anonymous sign-ins** (Authentication → Providers) — staff join
-   with a name and a game piece, no accounts needed.
+1. Create a Supabase project and run `supabase/migrations/0001_drink_race.sql`
+   (`supabase db push`, or paste it into the SQL editor).
+2. Enable **anonymous sign-ins** (Authentication → Providers).
 3. Copy `.env.example` to `.env.local` and fill in the project URL + anon key.
+4. Deploy (e.g. Vercel) with the same two env vars.
 
-Managers build a campaign at `/manager`; bartenders open `/game/<gameId>`
-on their phones, clock in, and every submission/approval syncs to every
-screen over Realtime.
+The manager starts a race at `/manager`, copies the crew link from the
+console, and drops it in the staff group chat.
 
-## The quest model
+## How it works
 
-- **Every tile is a manager-editable object**: its own kind (`standard`,
-  `goal`, `setback`, `event_card`, `checkpoint`, `boss`), name, house rule
-  text, **movement effect** for landing on it, optional target drink, and a
-  **move value** — what clearing its goal is worth (1 standard, 2 for a
-  Double Shift, 3 for a Boss Night).
-- **Checkpoints are a floor.** Flag any tile a checkpoint and no automatic
-  setback or event card can push a player below it, however harsh the
-  manager sets the numbers. Only a deliberate manager override crosses one.
-- **Event-card tiles draw the house deck.** Managers write the cards
-  ("Bribe the Barback: skip ahead 2", "Late to Shift: back 1"), weight how
-  often each comes up, and pin a card to a specific tile or leave it in the
-  general deck. Every draw is recorded.
-- **The official menu drives the goals.** `lib/recipes.ts` holds the
-  venue's 25-drink menu — exact specs, spirits, and garnishes, across
-  Hacien house signatures, spritzes, classics, and non-alcoholic serves.
-  Preset boards generate quests like "Sell 10 Hacien Pineapple Spritzes",
-  and the builder's **From menu…** dropdown lets managers target any drink
-  or a whole category ("Sell 15 non-alcoholic cocktails").
-- **Board Builder** (a tab in the manager console): the whole board as a
-  tap-to-edit map, an editor drawer per tile, the event-card deck, and
-  **quick-apply templates** — Chaos Shift, Cocktail Focus, Clean & Fast,
-  High-Margin Spirits. Editable mid-campaign, not just at launch.
-- **The prize is on the board.** A pulsing trophy in the header opens a
-  full-screen poster: the badge, the title ("Monthly Winner: £250 Cash +
-  Weekend Off"), the manager's own rules, and how you actually take it.
-  Managers set it at campaign setup and can rewrite it any time from the
-  Board Builder.
-- **Two ways to look at the board.** *The rail* is the scrolling chalk
-  strip; *Full board* lays every tile clockwise around a ring
-  (30 tiles → a 9×8 perimeter, corners styled Monopoly-heavy) with the
-  ticker and quick stats — leader, days left, drinks rung in — filling the
-  middle. Tap any tile for its rule and who's standing on it; tokens fan
-  out when several players share a tile.
-- **Bartender flow:** the quest card shows the active goal; tap the counter
-  as the shift goes (synced live so rivals can watch), attach one
-  till/shift photo, submit. Status flips to *Pending approval*; on approval
-  the token moves and the next quest reveals.
-- **Auto-trust toggle:** when on, submissions approve instantly — except on
-  the final tile: **the win always waits for a manager**.
-- **Landing effects** apply once and never chain.
-- **Manager console:** a 1-tap batch approval queue (all pending
-  submissions with claim-vs-target, notes, and photos via 60-second signed
-  URLs — approve or reject a whole night in seconds), plus roster
-  overrides ("Failed Audit" −2, manual advance) and review history.
+- **One race, one drink, one number.** The track has one box per drink;
+  your count is your square.
+- **Sold one / undo.** One tap per sale, with an undo key for mis-taps. The
+  server only accepts ±1 per tap, and only for your own piece.
+- **First to the target wins**, and the race locks for everyone.
+- **Till check at close.** The manager nudges any count up or down to
+  match the till. Knock the winner short and the race reopens; push someone
+  else to the target and the win moves. Every correction is logged.
+- **Manager PIN** (optional) lets a second phone make corrections. The
+  phone that opened the race never needs it.
 
 ## Architecture: the database is the referee
 
-The movement engine exists twice, on purpose: `lib/board.ts` (TypeScript)
-runs optimistically in the browser; `_apply_quest_approval` in
-`supabase/migrations/0004_tile_editor.sql` (plpgsql) runs authoritatively
-in Postgres. Row Level Security blocks all direct writes — `create_campaign`,
-`join_game`, `update_progress`, `submit_quest`, `review_submissions`,
-`manager_override`, `update_tile`, `apply_board_template`,
-`replace_event_deck`, `upsert_event_card` and `delete_event_card` are the
-only write path (migration 0003 **drops** the v0.2 tally RPCs so they can't
-bypass sign-off). Manager PIN checks are bcrypt-verified inside the RPCs,
-atomically with the action they authorize. Supabase Realtime broadcasts
-player, submission, and game-status changes to every device.
+`lib/race.ts` runs the rules optimistically in the browser;
+`_settle_race` in `supabase/migrations/0001_drink_race.sql` runs them
+authoritatively in Postgres. Row Level Security blocks every direct write —
+`create_race`, `join_race`, `ring_in` and `adjust_count` are the only write
+path. Taps lock the race row so two people hitting the target together
+can't both win. The PIN hash lives in a table no client can read.
 
 ## Structure
 
 ```
 app/
-  page.tsx                  Role picker (bartender / manager / training)
-  game/[gameId]/page.tsx    Bartender view: join card → board + quest card
-  manager/page.tsx          Campaign setup (name, template, length, trust, PIN)
-  manager/[gameId]/page.tsx Manager console: approval queue, roster, history
+  page.tsx                  Front door: on the bar / run the bar (+ specs test link)
+  manager/page.tsx          Start a race: drink, target, prize (name + PIN tucked away)
+  manager/[gameId]/page.tsx Manager console: crew link, stats, track, till check
+  game/[gameId]/page.tsx    Bartender view: track, ticker, Sold one, leaderboard
 components/
-  manager/BoardBuilder.tsx  Tile map, editor drawer, card deck, quick-apply
-  bartender/QuestCard.tsx   Active quest, progress stepper, photo, submit
-  bartender/JoinCard.tsx    Name + token picker (live mode)
-  board/BoardStrip.tsx      Scrolling tile strip w/ animated tokens + ×2/×3 badges
-  board/SquareBoard.tsx     Monopoly-style ring board, centre stats, tile popover
-  board/PrizeModal.tsx      Full-screen prize poster
-  board/tileChalk.ts        Shared tile styling for both boards
-  board/EventTicker.tsx     Play-by-play of board events
+  race/RaceTrack.tsx        Chalkboard track, one box per drink, animated pieces
+  race/Leaderboard.tsx      Ranked racers with progress bars (+ manager controls)
+  race/EventTicker.tsx      Play-by-play
+  race/PrizeModal.tsx       Full-screen prize poster
+  bartender/TallyPad.tsx    The drink, your count, Sold one / undo
+  bartender/JoinCard.tsx    Name + piece picker (live mode)
 lib/
-  recipes.ts                The official 25-drink menu: specs, categories, quest labels
-  board.ts                  Board templates + pure movement engine (mirrored in SQL)
-  useGame.ts                One API, two engines (demo / live)
-  useDemoGame.ts            Local reducer, seeded players + pending submission
-  useLiveGame.ts            Auth + optimistic RPCs + Realtime reconciliation
-  supabase/                 client, auth, db (rows/RPCs/storage), realtime
+  race.ts                   Pure race rules (mirrored in SQL) + ticker lines
+  useRace.ts                One API, two engines (demo / live)
+  useDemoRace.ts            Local race with a seeded crew that keeps pouring
+  useLiveRace.ts            Auth + optimistic taps + Realtime reconciliation
+  demoSetup.ts              Carries the demo race setup in the URL
+  recipes.ts                The venue's 25-drink menu (the drink picker)
+  supabase/                 client, auth, db (rows/RPCs), realtime
 supabase/
-  migrations/0001_init.sql  Base schema, RLS, realtime, receipts bucket
-  migrations/0002_engine_rpcs.sql  (v0.2 tally engine — superseded by 0003)
-  migrations/0003_campaign_quests.sql  Goals, submissions, batch review, PIN
-  migrations/0004_tile_editor.sql      Manager tile control, checkpoints, cards
-  migrations/0005_prize_and_board.sql  Prize fields + campaign length
-  tests/                    Platform stub + engine behavioral tests
-scripts/
-  test-db.sh                Throwaway-Postgres test runner (npm run test:db)
-  smoke.mjs                 Browser smoke test, mobile viewport (npm run test:e2e)
-public/training/            “Beat the Bartender” trivia on the official menu
+  migrations/0001_drink_race.sql  The whole schema, RLS, RPCs
+  tests/                    Platform stub + RPC behavioral tests
+public/training/            Bonus: “Beat the Bartender” specs test
                             (data/cocktails.js mirrors lib/recipes.ts — keep in sync)
 ```
 
 ## Testing
 
-- `npm run test:db` — throwaway local Postgres, all migrations, 19
-  behavioral tests of the engine RPCs: create/join, progress sync, pending
-  lock, duplicate rejection, PIN auth, batch approval movement, move value
-  + landing setback, rejection, auto-trust, override supersede,
-  manager-held win, **manager-defined tiles, the checkpoint floor holding
-  against a −10 setback, PIN-gated tile edits, patch semantics, card draws,
-  template swaps, refused mismatched templates, and a PIN-gated,
-  patch-safe prize**.
+- `npm run test:db` — throwaway local Postgres, the migration, and 10
+  behavioral tests: create/join, PIN hash kept private, ±1 taps and undo,
+  no tapping for someone else, first-to-target wins and locks, PIN-gated
+  corrections, a correction reopening the race with a paper trail, the
+  win moving on a correction, idempotent rejoin, RLS blocking direct writes.
 - `npm run test:e2e` — Playwright smoke test of Demo Mode at phone size
-  (progress → submit → pending; manager batch-approve moves the seeded
-  player; training game). Needs `npm run build && npm start` and a
-  Chromium binary (`CHROMIUM_BIN`).
+  (setup → manager console → bar view carries the race → taps/undo → prize
+  → finish → manager correction hands out the win → specs test). Needs
+  `npm run build && npm start` and a Chromium binary (`CHROMIUM_BIN`).
 - `npm run typecheck` / `npm run build` — strict TypeScript.
 
-## Known limits (v0.4)
+## Known limits
 
-- Anonymous sessions are per-browser; clearing site data orphans the player
-  (manager can re-add via override).
-- One photo per submission (by design — the shift-summary shot).
-- Manager overrides deliberately bypass the checkpoint floor — a checkpoint
-  protects against the board, not against the gaffer.
-- Un-flagging a checkpoint doesn't lower floors players already banked.
-- The square board's corners fall where the ring geometry puts them: with
-  30 tiles that's 1, 8, 16 and 23. A closed rectangular ring of 30 cells
-  can't put corners on 1/10/20/30 — a 32-tile board gives a perfect 9×9
-  square with corners on 1/9/17/25.
-- The prize badge is an emoji, not an uploaded image.
+- Anonymous sessions are per-browser; clearing site data means rejoining
+  as a new racer.
+- Counts are trusted until the till check — by design, for speed behind a
+  busy bar.
+- One race per link; start another race for the next night.
 
-## Roadmap to v0.5
+## Cut for the MVP (in git history)
 
-- Marathon summary screen + per-player history
-- Player-vs-player mechanics (steal a tile, head-to-head challenges)
-- Offline submission queue via background sync in `sw.js`
-- Magic-link identity upgrade for persistent profiles
-- Sound + bigger win celebration
+The v0.5 "Monthly Marathon" — a 20–40 tile quest board, Board Builder,
+setbacks, checkpoints, event-card deck, templates, photo-verified
+sign-off queue, and the square Monopoly-style board — lives in git history
+before this commit if any of it earns its way back.

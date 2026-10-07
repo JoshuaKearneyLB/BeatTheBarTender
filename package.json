@@ -1,8 +1,8 @@
 {
   "name": "baropoly",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "Mobile-first PWA that gamifies bar sales as a digital board game",
+  "description": "Drink race for bar teams: pick a drink, set a number, first to sell it wins",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

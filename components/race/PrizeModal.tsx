@@ -11,12 +11,13 @@ import type { Prize } from "@/lib/types";
 
 interface PrizeModalProps {
   prize: Prize;
-  boardLength: number;
+  target: number;
+  drinkName: string;
   open: boolean;
   onClose: () => void;
 }
 
-export default function PrizeModal({ prize, boardLength, open, onClose }: PrizeModalProps) {
+export default function PrizeModal({ prize, target, drinkName, open, onClose }: PrizeModalProps) {
   return (
     <AnimatePresence>
       {open && (
@@ -79,14 +80,14 @@ export default function PrizeModal({ prize, boardLength, open, onClose }: PrizeM
             <div className="bg-bar-950 px-6 py-4 text-center">
               <p className="ticket text-[10px] text-brass-400">How you take it</p>
               <p className="numerals mt-2 text-sm leading-relaxed text-cream-100">
-                {boardLength} TILES · FIRST TO LAST CALL · MANAGER SIGN-OFF
+                FIRST TO {target} × {drinkName.toUpperCase()} · CHECKED AT THE TILL
               </p>
-              <p className="chalk mt-1 text-lg text-cream-400">no sign-off, no prize.</p>
+              <p className="chalk mt-1 text-lg text-cream-400">till says no, no prize.</p>
               <button
                 onClick={onClose}
                 className="pos-key display mt-4 w-full border-2 border-brass-400 bg-brass-500 py-3 text-2xl text-bar-950"
               >
-                Back to the board
+                Back to the race
               </button>
             </div>
           </motion.div>

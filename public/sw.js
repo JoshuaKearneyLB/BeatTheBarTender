@@ -1,6 +1,6 @@
 // Minimal service worker: network-first with an offline shell cache.
 // v0.2 will add background sync for tally taps queued while offline.
-const CACHE = "baropoly-v1";
+const CACHE = "baropoly-v2";
 const SHELL = ["/", "/icon.svg", "/manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {

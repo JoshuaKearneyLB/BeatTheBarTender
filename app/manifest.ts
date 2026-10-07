@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Baropoly",
     short_name: "Baropoly",
-    description: "The shift is the board. Sell drinks, roll forward, beat the bar.",
+    description: "Tonight's drink race. Pick a drink, set a number, first behind the bar to sell it wins.",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",

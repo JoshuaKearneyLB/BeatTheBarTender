@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Database test runner: spins up a throwaway Postgres cluster, applies a
-# minimal Supabase-surface stub plus both migrations, then runs the RPC
+# minimal Supabase-surface stub plus the migrations, then runs the RPC
 # behavioral tests. Requires PostgreSQL server binaries (14+).
 set -euo pipefail
 cd "$(dirname "$0")/.."

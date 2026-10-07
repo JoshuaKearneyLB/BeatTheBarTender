@@ -1,62 +1,38 @@
 import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 
-export type GameTable =
-  | "games"
-  | "game_players"
-  | "quest_submissions"
-  | "game_tiles"
-  | "event_cards";
-
-export interface GameChange {
-  table: GameTable;
-  eventType: "INSERT" | "UPDATE" | "DELETE";
+export interface RaceChange {
+  table: "races" | "racers";
   new: Record<string, unknown> | null;
 }
 
 /**
- * Subscribe to live changes for one game: player movement, tally inserts and
- * voids, and game status (win) updates. Fires `onChange` per row change; the
- * caller patches local state. Returns an unsubscribe function.
+ * Subscribe to live changes for one race: every racer's count and the race
+ * row (status, winner). Fires `onChange` per row change; the caller patches
+ * local state. Returns an unsubscribe function.
  *
- * Requires these tables in the `supabase_realtime` publication
- * (see supabase/migrations/0001_init.sql).
+ * Requires both tables in the `supabase_realtime` publication
+ * (see supabase/migrations/0001_drink_race.sql).
  */
-export function subscribeToGame(
+export function subscribeToRace(
   supabase: SupabaseClient,
-  gameId: string,
-  onChange: (change: GameChange) => void,
+  raceId: string,
+  onChange: (change: RaceChange) => void,
 ): () => void {
-  const forward = (table: GameTable) => (payload: {
-    eventType: "INSERT" | "UPDATE" | "DELETE";
-    new: Record<string, unknown> | null;
-  }) => onChange({ table, eventType: payload.eventType, new: payload.new ?? null });
+  const forward =
+    (table: RaceChange["table"]) => (payload: { new: Record<string, unknown> | null }) =>
+      onChange({ table, new: payload.new ?? null });
 
   const channel: RealtimeChannel = supabase
-    .channel(`game:${gameId}`)
+    .channel(`race:${raceId}`)
     .on(
       "postgres_changes",
-      { event: "*", schema: "public", table: "game_players", filter: `game_id=eq.${gameId}` },
-      forward("game_players"),
+      { event: "*", schema: "public", table: "racers", filter: `race_id=eq.${raceId}` },
+      forward("racers"),
     )
     .on(
       "postgres_changes",
-      { event: "*", schema: "public", table: "quest_submissions", filter: `game_id=eq.${gameId}` },
-      forward("quest_submissions"),
-    )
-    .on(
-      "postgres_changes",
-      { event: "UPDATE", schema: "public", table: "games", filter: `id=eq.${gameId}` },
-      forward("games"),
-    )
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "game_tiles", filter: `game_id=eq.${gameId}` },
-      forward("game_tiles"),
-    )
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "event_cards", filter: `game_id=eq.${gameId}` },
-      forward("event_cards"),
+      { event: "UPDATE", schema: "public", table: "races", filter: `id=eq.${raceId}` },
+      forward("races"),
     )
     .subscribe();
 

@@ -17,7 +17,7 @@ const chalk = localFont({
 
 export const metadata: Metadata = {
   title: "Baropoly",
-  description: "The shift is the board. Sell drinks, roll forward, beat the bar.",
+  description: "Tonight's drink race. Pick a drink, set a number, first behind the bar to sell it wins.",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Baropoly" },
 };
@@ -26,8 +26,6 @@ export const viewport: Viewport = {
   themeColor: "#14100d",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1, // feels like an app: no pinch-zoom on the tally pad
-  userScalable: false,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
